@@ -1,41 +1,41 @@
-import uuid from 'uuid';
-import ValidationError from '../ValidationError';
-import CleanValue from './CleanValue';
+import uuid from "uuid"
+import ValidationError from "../ValidationError"
+import CleanValue from "./CleanValue"
 
 function GenerateDefaultValuesAsync(neode, model, properties) {
-    const schema = model.schema();
-    const output = {};
+  const schema = model.schema()
+  const output = {}
 
-    if ( !(properties instanceof Object )) {
-        throw new ValidationError('`properties` must be an object.', properties);
+  if (!(properties instanceof Object)) {
+    throw new ValidationError("`properties` must be an object.", properties)
+  }
+
+  // Get All Config
+  Object.keys(schema).forEach(key => {
+    const config = typeof schema[key] === "string" ? { type: schema[key] } : schema[key]
+
+    switch (config.type) {
+      case "uuid":
+        config.default = uuid.v4
+        break
     }
 
-    // Get All Config
-    Object.keys(schema).forEach(key => {
-        const config = typeof schema[ key ] == 'string' ? {type: schema[ key ]} : schema[ key ];
+    if (properties.hasOwnProperty(key)) {
+      output[key] = properties[key]
+    }
 
-        switch (config.type) {
-            case 'uuid':
-                config.default = uuid.v4;
-                break;
-        }
+    // Set Default Value
+    else if (typeof config.default !== "undefined") {
+      output[key] = typeof config.default === "function" ? config.default() : config.default
+    }
 
-        if (properties.hasOwnProperty(key)) {
-            output[ key ] = properties[ key ];
-        }
+    // Clean Value
+    if (output[key]) {
+      output[key] = CleanValue(config, output[key])
+    }
+  })
 
-        // Set Default Value
-        else if (typeof config.default !== "undefined") {
-            output[ key ] = typeof config.default == 'function' ? config.default() : config.default;
-        }
-
-        // Clean Value
-        if (output[ key ]) {
-            output[ key ] = CleanValue(config, output[ key ]);
-        }
-    });
-
-    return output;
+  return output
 }
 
 /**
@@ -47,11 +47,11 @@ function GenerateDefaultValuesAsync(neode, model, properties) {
  * @return {Promise}
  */
 function GenerateDefaultValues(neode, model, properties) {
-    const output = GenerateDefaultValuesAsync(neode, model, properties);
+  const output = GenerateDefaultValuesAsync(neode, model, properties)
 
-    return Promise.resolve(output);
+  return Promise.resolve(output)
 }
 
-GenerateDefaultValues.async = GenerateDefaultValuesAsync;
+GenerateDefaultValues.async = GenerateDefaultValuesAsync
 
-export default GenerateDefaultValues;
+export default GenerateDefaultValues

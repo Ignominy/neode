@@ -1,6 +1,6 @@
-import Builder, {mode} from '../Query/Builder';
+import Builder, { mode } from "../Query/Builder"
 
-export const MAX_EAGER_DEPTH = 10;
+export const MAX_EAGER_DEPTH = 10
 
 /**
  * Add a recursive cascade deletion
@@ -13,32 +13,30 @@ export const MAX_EAGER_DEPTH = 10;
  * @param {Integer}          to_depth       Maximum depth to delete to
  */
 function addCascadeDeleteNode(neode, builder, from_alias, relationship, aliases, to_depth) {
-    if ( aliases.length > to_depth ) return;
+  if (aliases.length > to_depth) return
 
-    const rel_alias = from_alias + relationship.name() + '_rel';
-    const node_alias = from_alias + relationship.name() + '_node';
-    const target = neode.model( relationship.target() );
+  const rel_alias = `${from_alias + relationship.name()}_rel`
+  const node_alias = `${from_alias + relationship.name()}_node`
+  const target = neode.model(relationship.target())
 
-    // Optional Match
-    builder.optionalMatch(from_alias)
-        .relationship(relationship.relationship(), relationship.direction(), rel_alias)
-        .to(node_alias, relationship.target());
+  // Optional Match
+  builder.optionalMatch(from_alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(node_alias, relationship.target())
 
-    // Check for cascade deletions
-    target.relationships().forEach(relationship => {
-        switch ( relationship.cascade() ) {
-            case 'delete':
-                addCascadeDeleteNode(neode, builder, node_alias, relationship, aliases.concat(node_alias), to_depth);
-                break;
+  // Check for cascade deletions
+  target.relationships().forEach(relationship => {
+    switch (relationship.cascade()) {
+      case "delete":
+        addCascadeDeleteNode(neode, builder, node_alias, relationship, aliases.concat(node_alias), to_depth)
+        break
 
-            // case 'detach':
-            //     addDetachNode(neode, builder, node_alias, relationship, aliases);
-            //     break;
-        }
-    });
+      // case 'detach':
+      //     addDetachNode(neode, builder, node_alias, relationship, aliases);
+      //     break;
+    }
+  })
 
-    // Delete it
-    builder.detachDelete(node_alias);
+  // Delete it
+  builder.detachDelete(node_alias)
 }
 
 /**
@@ -73,30 +71,28 @@ function addDetachNode(neode, builder, from_alias, relationship, aliases) {
  * @param {Integer} to_depth    Maximum deletion depth
  */
 export default function DeleteNode(neode, identity, model, to_depth = MAX_EAGER_DEPTH) {
-    const alias = 'this';
-    // const to_delete = [];
-    const aliases = [alias];
-    // const depth = 1;
+  const alias = "this"
+  // const to_delete = [];
+  const aliases = [alias]
+  // const depth = 1;
 
-    const builder = (new Builder(neode))
-        .match(alias, model)
-        .whereId(alias, identity);
+  const builder = new Builder(neode).match(alias, model).whereId(alias, identity)
 
-    // Cascade delete to relationships
-    model.relationships().forEach(relationship => {
-        switch ( relationship.cascade() ) {
-            case 'delete':
-                addCascadeDeleteNode(neode, builder, alias, relationship, aliases, to_depth);
-                break;
+  // Cascade delete to relationships
+  model.relationships().forEach(relationship => {
+    switch (relationship.cascade()) {
+      case "delete":
+        addCascadeDeleteNode(neode, builder, alias, relationship, aliases, to_depth)
+        break
 
-            // case 'detach':
-            //     addDetachNode(neode, builder, alias, relationship, aliases);
-            //     break;
-        }
-    });
+      // case 'detach':
+      //     addDetachNode(neode, builder, alias, relationship, aliases);
+      //     break;
+    }
+  })
 
-    // Detach Delete target node
-    builder.detachDelete(alias);
+  // Detach Delete target node
+  builder.detachDelete(alias)
 
-    return builder.execute(mode.WRITE);
+  return builder.execute(mode.WRITE)
 }

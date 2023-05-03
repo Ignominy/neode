@@ -5,6 +5,6 @@ export default class WithDistinctStatement {
 
     toString() {
         const vars = this._with.join(',');
-        return 'WITH DISTINCT '+  vars;
+        return `WITH DISTINCT ${  vars}`;
     }
 }

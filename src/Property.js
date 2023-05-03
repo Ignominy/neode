@@ -1,64 +1,64 @@
 /**
  *  Container holding information for a property.
- * 
+ *
  * TODO: Schema validation to enforce correct data types
  */
 export default class Property {
-    constructor(name, schema) {
-        if ( typeof schema == 'string' ) {
-            schema = {type:schema};
-        }
-
-        this._name = name;
-        this._schema = schema;
-
-        // TODO: Clean Up
-        Object.keys(schema).forEach(key => {
-            this['_'+ key] = schema[key];
-        });
+  constructor(name, schema) {
+    if (typeof schema === "string") {
+      schema = { type: schema }
     }
 
-    name() {
-        return this._name;
-    }
+    this._name = name
+    this._schema = schema
 
-    type() {
-        return this._schema.type;
-    }
+    // TODO: Clean Up
+    Object.keys(schema).forEach(key => {
+      this[`_${key}`] = schema[key]
+    })
+  }
 
-    primary() {
-        return this._primary || false;
-    }
+  name() {
+    return this._name
+  }
 
-    unique() {
-        return this._unique || false;
-    }
+  type() {
+    return this._schema.type
+  }
 
-    exists() {
-        return this._exists || false;
-    }
+  primary() {
+    return this._primary || false
+  }
 
-    required() {
-        return this._exists || this._required || false;
-    }
+  unique() {
+    return this._unique || false
+  }
 
-    indexed() {
-        return this._index || false;
-    }
+  exists() {
+    return this._exists || false
+  }
 
-    protected() {
-        return this._primary || this._protected;
-    }
+  required() {
+    return this._exists || this._required || false
+  }
 
-    hidden() {
-        return this._hidden;
-    }
+  indexed() {
+    return this._index || false
+  }
 
-    readonly() {
-        return this._readonly || false;
-    }
+  protected() {
+    return this._primary || this._protected
+  }
 
-    convertToInteger() {
-        return this._type == 'int' || this._type == 'integer';
-    }
+  hidden() {
+    return this._hidden
+  }
+
+  readonly() {
+    return this._readonly || false
+  }
+
+  convertToInteger() {
+    return this._type == "int" || this._type == "integer"
+  }
 }

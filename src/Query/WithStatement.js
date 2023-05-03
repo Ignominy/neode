@@ -5,6 +5,6 @@ export default class WithStatement {
 
     toString() {
         const vars = this._with.join(',');
-        return 'WITH '+  vars;
+        return `WITH ${  vars}`;
     }
 }
