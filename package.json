@@ -26,20 +26,20 @@
   "license": "MIT",
   "dependencies": {
     "@hapi/joi": "^15.1.1",
-    "dotenv": "^4.0.0",
-    "neo4j-driver": "^4.2.2",
-    "uuid": "^3.4.0"
+    "dotenv": "^16.0.1",
+    "neo4j-driver": "^5.6.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "@relynk/eslint-config": "*",
-    "@relynk/tsconfig": "*",
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.9.6",
     "@babel/node": "^7.8.4",
     "@babel/preset-env": "^7.9.6",
     "@babel/register": "^7.8.6",
-    "chai": "^3.5.0",
-    "mocha": "^5.2.0",
+    "@relynk/eslint-config": "*",
+    "@relynk/tsconfig": "*",
+    "chai": "^4.3.6",
+    "mocha": "^10.0.0",
     "nyc": "^14.1.1"
   },
   "bugs": {
