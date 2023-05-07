@@ -1,4 +1,4 @@
-import Model from "../Model"
+import { getLabelStringWithCustomerIdCheck } from "./GetLabelStringWithCustomerIdCheck"
 
 export default class Create {
   constructor(alias, model = false) {
@@ -10,11 +10,7 @@ export default class Create {
     const alias = this._alias || ""
     let model = ""
 
-    if (this._model instanceof Model) {
-      model = `:${this._model.labels().join(":")}`
-    } else if (typeof this._model === "string") {
-      model = `:${this._model}`
-    }
+    model = getLabelStringWithCustomerIdCheck(this._model, this._customerId)
 
     return `(${alias}${model || ""})`
   }

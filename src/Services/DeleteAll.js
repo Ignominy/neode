@@ -1,7 +1,11 @@
 // TODO : Delete Dependencies
 
-export default function DeleteAll(neode, model) {
-  const query = `MATCH (node:${model.labels().join(":")}) DETACH DELETE node`
+import { getLabelStringWithCustomerIdCheck } from "../Query/GetLabelStringWithCustomerIdCheck"
+
+export default function DeleteAll(neode, model, customerId) {
+  const labels = getLabelStringWithCustomerIdCheck("node", model, customerId)
+
+  const query = `MATCH (node${labels}) DETACH DELETE node`
 
   return neode.writeCypher(query)
 }

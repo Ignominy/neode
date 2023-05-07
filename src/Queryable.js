@@ -30,22 +30,24 @@ export default class Queryable {
    * Create a new instance of this Model
    *
    * @param  {object} properties
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  create(properties) {
-    return Create(this._neode, this, properties)
+  create(properties, customerId) {
+    return Create(this._neode, this, properties, customerId)
   }
 
   /**
    * Merge a node based on the defined indexes
    *
    * @param  {Object} properties
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  merge(properties) {
+  merge(properties, customerId) {
     const merge_on = this.mergeFields()
 
-    return MergeOn(this._neode, this, merge_on, properties)
+    return MergeOn(this._neode, this, merge_on, properties, customerId)
   }
 
   /**
@@ -53,13 +55,14 @@ export default class Queryable {
    *
    * @param  {Object} match Specific properties to merge on
    * @param  {Object} set   Properties to set
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  mergeOn(match, set) {
+  mergeOn(match, set, customerId) {
     const merge_on = Object.keys(match)
     const properties = { ...match, ...set }
 
-    return MergeOn(this._neode, this, merge_on, properties)
+    return MergeOn(this._neode, this, merge_on, properties, customerId)
   }
 
   /**
@@ -78,22 +81,24 @@ export default class Queryable {
    * @param  {String|Array|Object} order
    * @param  {Int}                 limit
    * @param  {Int}                 skip
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  all(properties, order, limit, skip) {
-    return FindAll(this._neode, this, properties, order, limit, skip)
+  all(properties, order, limit, skip, customerId) {
+    return FindAll(this._neode, this, properties, order, limit, skip, customerId)
   }
 
   /**
    * Find a Node by its Primary Key
    *
    * @param  {mixed} id
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  find(id) {
+  find(id, customerId) {
     const primary_key = this.primaryKey()
 
-    return this.first(primary_key, id)
+    return this.first(primary_key, id, customerId)
   }
 
   /**
@@ -101,10 +106,11 @@ export default class Queryable {
    *
    * @param  {String} model
    * @param  {int}    id
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  findById(id) {
-    return FindById(this._neode, this, id)
+  findById(id, customerId) {
+    return FindById(this._neode, this, id, customerId)
   }
 
   /**
@@ -113,10 +119,11 @@ export default class Queryable {
    * @param  {String} label
    * @param  {mixed}  key     Either a string for the property name or an object of values
    * @param  {mixed}  value   Value
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  first(key, value) {
-    return First(this._neode, this, key, value)
+  first(key, value, customerId) {
+    return First(this._neode, this, key, value, customerId)
   }
 
   /**
@@ -129,9 +136,10 @@ export default class Queryable {
    * @param  {String|Array|Object} order
    * @param  {Int}                 limit
    * @param  {Int}                 skip
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  withinDistance(location_property, point, distance, properties, order, limit, skip) {
-    return FindWithinDistance(this._neode, this, location_property, point, distance, properties, order, limit, skip)
+  withinDistance(location_property, point, distance, properties, order, limit, skip, customerId) {
+    return FindWithinDistance(this._neode, this, location_property, point, distance, properties, order, limit, skip, customerId)
   }
 }

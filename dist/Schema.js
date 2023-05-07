@@ -4,43 +4,33 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = void 0;
-
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
-
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
-
 function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return _typeof(key) === "symbol" ? key : String(key); }
-
 function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (_typeof(res) !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
-
 function UniqueConstraintCypher(label, property) {
   var mode = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "CREATE";
   return "".concat(mode, " CONSTRAINT ON (model:").concat(label, ") ASSERT model.").concat(property, " IS UNIQUE");
 }
-
 function ExistsConstraintCypher(label, property) {
   var mode = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "CREATE";
   return "".concat(mode, " CONSTRAINT ON (model:").concat(label, ") ASSERT EXISTS(model.").concat(property, ")");
 }
-
 function IndexCypher(label, property) {
   var mode = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "CREATE";
   return "".concat(mode, " INDEX ON :").concat(label, "(").concat(property, ")");
 }
-
 function runAsync(session, queries, resolve, reject) {
   var next = queries.pop();
   return session.run(next).then(function () {
     // If there is another query, let's run it
     if (queries.length) {
       return runAsync(session, queries, resolve, reject);
-    } // Close Session and resolve
+    }
 
-
+    // Close Session and resolve
     session.close();
     resolve();
     return undefined;
@@ -48,7 +38,6 @@ function runAsync(session, queries, resolve, reject) {
     reject(e);
   });
 }
-
 function InstallSchema(neode) {
   var queries = [];
   neode.models.forEach(function (model, label) {
@@ -57,12 +46,11 @@ function InstallSchema(neode) {
       if (property.primary() || property.unique()) {
         queries.push(UniqueConstraintCypher(label, property.name()));
       }
-
       if (neode.enterprise() && property.required()) {
         queries.push(ExistsConstraintCypher(label, property.name()));
-      } // Indexes
+      }
 
-
+      // Indexes
       if (property.indexed()) {
         queries.push(IndexCypher(label, property.name()));
       }
@@ -70,7 +58,6 @@ function InstallSchema(neode) {
   });
   return neode.batch(queries);
 }
-
 function DropSchema(neode) {
   var queries = [];
   neode.models.forEach(function (model, label) {
@@ -79,12 +66,11 @@ function DropSchema(neode) {
       if (property.unique()) {
         queries.push(UniqueConstraintCypher(label, property.name(), "DROP"));
       }
-
       if (neode.enterprise() && property.required()) {
         queries.push(ExistsConstraintCypher(label, property.name(), "DROP"));
-      } // Indexes
+      }
 
-
+      // Indexes
       if (property.indexed()) {
         queries.push(IndexCypher(label, property.name(), "DROP"));
       }
@@ -95,14 +81,11 @@ function DropSchema(neode) {
     runAsync(session, queries, resolve, reject);
   });
 }
-
 var Schema = /*#__PURE__*/function () {
   function Schema(neode) {
     _classCallCheck(this, Schema);
-
     this.neode = neode;
   }
-
   _createClass(Schema, [{
     key: "install",
     value: function install() {
@@ -114,8 +97,6 @@ var Schema = /*#__PURE__*/function () {
       return DropSchema(this.neode);
     }
   }]);
-
   return Schema;
 }();
-
 exports["default"] = Schema;

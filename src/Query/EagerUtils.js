@@ -13,8 +13,9 @@ export const MAX_EAGER_DEPTH = 3
  * @param {Integer} depth               Maximum depth to stop at
  * @param {String} alias                Alias for the starting node
  * @param {RelationshipType} rel        Type of relationship
+ * @param {string|null} customerId        Customer ID
  */
-export function eagerPattern(neode, depth, alias, rel) {
+export function eagerPattern(neode, depth, alias, rel, customerId) {
   const builder = new Builder()
 
   const name = rel.name()
@@ -31,19 +32,22 @@ export function eagerPattern(neode, depth, alias, rel) {
   } catch (e) {}
 
   // Build Pattern
-  builder.match(alias).relationship(relationship, direction, relationship_variable).to(node_variable, target_model)
+  builder
+    .match(alias, undefined, undefined, customerId)
+    .relationship(relationship, direction, relationship_variable)
+    .to(node_variable, target_model, undefined, customerId)
 
   let fields = node_variable
 
   switch (type) {
     case "node":
     case "nodes":
-      fields = eagerNode(neode, depth + 1, node_variable, target_model)
+      fields = eagerNode(neode, depth + 1, node_variable, target_model, customerId)
       break
 
     case "relationship":
     case "relationships":
-      fields = eagerRelationship(neode, depth + 1, relationship_variable, rel.nodeAlias(), node_variable, target_model)
+      fields = eagerRelationship(neode, depth + 1, relationship_variable, rel.nodeAlias(), node_variable, target_model, customerId)
   }
 
   const pattern = `${name}: [ ${builder.pattern().trim()} | ${fields} ]`
@@ -64,8 +68,9 @@ export function eagerPattern(neode, depth, alias, rel) {
  * @param {Integer} depth   Maximum depth to traverse to
  * @param {String} alias    Alias of the node
  * @param {Model} model     Node model
+ * @param {string|null} customerId        Customer ID
  */
-export function eagerNode(neode, depth, alias, model) {
+export function eagerNode(neode, depth, alias, model, customerId) {
   const indent = `  `.repeat(depth * 2)
   let pattern = `\n${indent} ${alias} { `
 
@@ -81,7 +86,7 @@ export function eagerNode(neode, depth, alias, model) {
   // Eager
   if (model && depth <= MAX_EAGER_DEPTH) {
     model.eager().forEach(rel => {
-      pattern += `\n${indent}${indent},${eagerPattern(neode, depth, alias, rel)}`
+      pattern += `\n${indent}${indent},${eagerPattern(neode, depth, alias, rel, customerId)}`
     })
   }
 
@@ -98,8 +103,9 @@ export function eagerNode(neode, depth, alias, model) {
  * @param {Integer} depth   Maximum depth to traverse to
  * @param {String} alias    Alias of the node
  * @param {Model} model     Node model
+ * @param {string|null} customerId        Customer ID
  */
-export function eagerRelationship(neode, depth, alias, node_alias, node_variable, node_model) {
+export function eagerRelationship(neode, depth, alias, node_alias, node_variable, node_model, customerId) {
   const indent = `  `.repeat(depth * 2)
   let pattern = `\n${indent} ${alias} { `
 
@@ -115,7 +121,7 @@ export function eagerRelationship(neode, depth, alias, node_alias, node_variable
   // Node Alias
   // pattern += `\n,${indent}${indent},${node_alias}`
   pattern += `\n${indent}${indent},${node_alias}: `
-  pattern += eagerNode(neode, depth + 1, node_variable, node_model)
+  pattern += eagerNode(neode, depth + 1, node_variable, node_model, customerId)
 
   pattern += `\n${indent}}`
 

@@ -57,7 +57,7 @@ export default class Factory {
    * @return {Model}
    */
   getDefinition(labels) {
-    return this._neode.models.getByLabels(labels)
+    return this._neode.models.getByLabels(labels.filter(x => !x.startsWith("cid_")))
   }
 
   /**

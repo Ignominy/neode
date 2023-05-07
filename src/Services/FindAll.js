@@ -1,13 +1,13 @@
 import Builder, { mode } from "../Query/Builder"
 import { eagerNode } from "../Query/EagerUtils"
 
-export default function FindAll(neode, model, properties, order, limit, skip) {
+export default function FindAll(neode, model, properties, order, limit, skip, customerId) {
   const alias = "this"
 
   const builder = new Builder(neode)
 
   // Match
-  builder.match(alias, model)
+  builder.match(alias, model, undefined, customerId)
 
   // Where
   if (properties) {
@@ -26,7 +26,7 @@ export default function FindAll(neode, model, properties, order, limit, skip) {
   }
 
   // Output
-  const output = eagerNode(neode, 1, alias, model)
+  const output = eagerNode(neode, 1, alias, model, customerId)
 
   return builder
     .return(output)

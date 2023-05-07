@@ -1,6 +1,6 @@
-import Relationship from "./Relationship"
 import RelationshipType from "../RelationshipType"
 import Property from "./Property"
+import Relationship from "./Relationship"
 
 export default class Statement {
   constructor(prefix) {

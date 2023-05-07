@@ -4,15 +4,15 @@
 /* eslint-disable global-require */
 /* eslint-disable import/no-import-module-exports */
 import fs from "fs"
-import path from "path"
 import neo4j from "neo4j-driver"
+import path from "path"
+import Collection from "./Collection"
 import Factory from "./Factory"
 import Model from "./Model"
 import ModelMap from "./ModelMap"
+import Builder from "./Query/Builder"
 import Schema from "./Schema"
 import TransactionError from "./TransactionError"
-import Builder from "./Query/Builder"
-import Collection from "./Collection"
 
 export default class Neode {
   /**
@@ -201,20 +201,22 @@ export default class Neode {
    *
    * @param  {String} model
    * @param  {Object} properties
+   * @param  {String|null} customerId
    * @return {Node}
    */
-  create(model, properties) {
-    return this.models.get(model).create(properties)
+  create(model, properties, customerId) {
+    return this.models.get(model).create(properties, customerId)
   }
 
   /**
    * Merge a node based on the defined indexes
    *
    * @param  {Object} properties
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  merge(model, properties) {
-    return this.model(model).merge(properties)
+  merge(model, properties, customerId) {
+    return this.model(model).merge(properties, customerId)
   }
 
   /**
@@ -222,10 +224,11 @@ export default class Neode {
    *
    * @param  {Object} match Specific properties to merge on
    * @param  {Object} set   Properties to set
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  mergeOn(model, match, set) {
-    return this.model(model).mergeOn(match, set)
+  mergeOn(model, match, set, customerId) {
+    return this.model(model).mergeOn(match, set, customerId)
   }
 
   /**
@@ -447,10 +450,11 @@ export default class Neode {
    * @param  {String|Array|Object} order
    * @param  {Int}                 limit
    * @param  {Int}                 skip
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  all(label, properties, order, limit, skip) {
-    return this.models.get(label).all(properties, order, limit, skip)
+  all(label, properties, order, limit, skip, customerId) {
+    return this.models.get(label).all(properties, order, limit, skip, customerId)
   }
 
   /**
@@ -458,10 +462,11 @@ export default class Neode {
    *
    * @param  {String} label
    * @param  {mixed}  id
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  find(label, id) {
-    return this.models.get(label).find(id)
+  find(label, id, customerId) {
+    return this.models.get(label).find(id, customerId)
   }
 
   /**
@@ -469,10 +474,11 @@ export default class Neode {
    *
    * @param  {String} model
    * @param  {int}    id
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  findById(label, id) {
-    return this.models.get(label).findById(id)
+  findById(label, id, customerId) {
+    return this.models.get(label).findById(id, customerId)
   }
 
   /**
@@ -481,10 +487,11 @@ export default class Neode {
    * @param  {String} label
    * @param  {mixed}  key     Either a string for the property name or an object of values
    * @param  {mixed}  value   Value
+   * @param  {String|null} customerId
    * @return {Promise}
    */
-  first(label, key, value) {
-    return this.models.get(label).first(key, value)
+  first(label, key, value, customerId) {
+    return this.models.get(label).first(key, value, customerId)
   }
 
   /**

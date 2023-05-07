@@ -1,11 +1,12 @@
 // TODO: Rename this, NodePattern?
-import Model from "../Model"
+import { getLabelStringWithCustomerIdCheck } from "./GetLabelStringWithCustomerIdCheck"
 
 export default class Match {
-  constructor(alias, model = false, properties = []) {
+  constructor(alias, model = false, properties = [], customerId = undefined) {
     this._alias = alias
     this._model = model
     this._properties = properties
+    this._customerId = customerId
   }
 
   toString() {
@@ -13,11 +14,7 @@ export default class Match {
     let model = ""
     let properties = ""
 
-    if (this._model instanceof Model) {
-      model = `:${this._model.labels().join(":")}`
-    } else if (typeof this._model === "string") {
-      model = `:${this._model}`
-    }
+    model = getLabelStringWithCustomerIdCheck(this._model, this._customerId)
 
     if (this._properties.length) {
       properties = " { "

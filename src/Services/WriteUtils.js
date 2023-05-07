@@ -1,6 +1,6 @@
-import GenerateDefaultValues from "./GenerateDefaultValues"
-import Node from "../Node"
 import { valueToCypher } from "../Entity"
+import Node from "../Node"
+import GenerateDefaultValues from "./GenerateDefaultValues"
 
 export const MAX_CREATE_DEPTH = 99
 export const ORIGINAL_ALIAS = "this"
@@ -69,7 +69,7 @@ function splitProperties(mode, model, properties, merge_on = []) {
  * @param {String}  mode        'create' or 'merge'
  * @param {Array}   merge_on    Which properties should we merge on?
  */
-export function addNodeToStatement(neode, builder, alias, model, properties, aliases = [], mode = "create", merge_on = []) {
+export function addNodeToStatement(neode, builder, alias, model, properties, aliases = [], mode = "create", merge_on = [], customerId) {
   // Split Properties
   const { inline, on_create, on_match, set } = splitProperties(mode, model, properties, merge_on)
 
@@ -79,7 +79,7 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
   }
 
   // Create
-  builder[mode](alias, model, inline)
+  builder[mode](alias, model, inline, customerId)
 
   // On create set
   if (Object.keys(on_create).length) {
@@ -122,7 +122,7 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
       switch (relationship.type()) {
         // Single Relationship
         case "relationship":
-          addRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode)
+          addRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId)
           break
 
         // Array of Relationships
@@ -131,13 +131,13 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
 
           value.forEach((value, idx) => {
             // Carry alias through
-            addRelationshipToStatement(neode, builder, alias, rel_alias + idx, target_alias + idx, relationship, value, aliases, mode)
+            addRelationshipToStatement(neode, builder, alias, rel_alias + idx, target_alias + idx, relationship, value, aliases, mode, customerId)
           })
           break
 
         // Single Node
         case "node":
-          addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode)
+          addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId)
           break
 
         // Array of Nodes
@@ -145,7 +145,7 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
           if (!Array.isArray(value)) value = [value]
 
           value.forEach((value, idx) => {
-            addNodeRelationshipToStatement(neode, builder, alias, rel_alias + idx, target_alias + idx, relationship, value, aliases, mode)
+            addNodeRelationshipToStatement(neode, builder, alias, rel_alias + idx, target_alias + idx, relationship, value, aliases, mode, customerId)
           })
           break
       }
@@ -166,9 +166,10 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
  * @param {Relationship}    relationship    Model
  * @param {Object}          value           Value map
  * @param {Array}           aliases         Aliases to carry through in with statement
- * @param {String}          mode        'create' or 'merge'
+ * @param {String}          mode            'create' or 'merge'
+ * @param {String|null}     customerId      Customer ID
  */
-export function addRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode) {
+export function addRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId) {
   if (aliases.length > MAX_CREATE_DEPTH) {
     return
   }
@@ -190,9 +191,14 @@ export function addRelationshipToStatement(neode, builder, alias, rel_alias, tar
   else if (typeof node_value === "string" || typeof node_value === "number") {
     const model = neode.model(relationship.target())
 
-    builder.merge(target_alias, model, {
-      [model.primaryKey()]: node_value,
-    })
+    builder.merge(
+      target_alias,
+      model,
+      {
+        [model.primaryKey()]: node_value,
+      },
+      customerId,
+    )
   }
 
   // If Map is passed, attempt to create that node and then relate
@@ -205,7 +211,7 @@ export function addRelationshipToStatement(neode, builder, alias, rel_alias, tar
 
     node_value = GenerateDefaultValues.async(neode, model, node_value)
 
-    addNodeToStatement(neode, builder, target_alias, model, node_value, aliases, mode, model.mergeFields())
+    addNodeToStatement(neode, builder, target_alias, model, node_value, aliases, mode, model.mergeFields(), customerId)
   }
 
   // Create the Relationship
@@ -233,8 +239,9 @@ export function addRelationshipToStatement(neode, builder, alias, rel_alias, tar
  * @param {Object}          value           Value map
  * @param {Array}           aliases         Aliases to carry through in with statement
  * @param {String}  mode        'create' or 'merge'
+ * @param {String|null}     customerId      Customer ID
  */
-export function addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode) {
+export function addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId) {
   if (aliases.length > MAX_CREATE_DEPTH) {
     return
   }
@@ -247,9 +254,14 @@ export function addNodeRelationshipToStatement(neode, builder, alias, rel_alias,
   else if (typeof value === "string" || typeof value === "number") {
     const model = neode.model(relationship.target())
 
-    builder.merge(target_alias, model, {
-      [model.primaryKey()]: value,
-    })
+    builder.merge(
+      target_alias,
+      model,
+      {
+        [model.primaryKey()]: value,
+      },
+      customerId,
+    )
   }
   // If Map is passed, attempt to create that node and then relate
   // TODO: What happens when we need to validate this?
@@ -263,7 +275,7 @@ export function addNodeRelationshipToStatement(neode, builder, alias, rel_alias,
 
     value = GenerateDefaultValues.async(neode, model, value)
 
-    addNodeToStatement(neode, builder, target_alias, model, value, aliases, mode, model.mergeFields())
+    addNodeToStatement(neode, builder, target_alias, model, value, aliases, mode, model.mergeFields(), customerId)
   }
 
   // Create the Relationship

@@ -2,15 +2,15 @@ import neo4j from "neo4j-driver"
 import Match from "./Match"
 import Order from "./Order"
 // import Return from './Return';
-import Statement from "./Statement"
 import Property from "./Property"
-import WhereStatement from "./WhereStatement"
+import Statement from "./Statement"
 import Where, { OPERATOR_EQUALS } from "./Where"
 import WhereBetween from "./WhereBetween"
 import WhereId from "./WhereId"
 import WhereRaw from "./WhereRaw"
-import WithStatement from "./WithStatement"
+import WhereStatement from "./WhereStatement"
 import WithDistinctStatement from "./WithDistinctStatement"
+import WithStatement from "./WithStatement"
 
 export const mode = {
   READ: "READ",
@@ -64,22 +64,23 @@ export default class Builder {
    * @param  {String} alias           Alias in query
    * @param  {Model|String}  model    Model definition
    * @param  {Object|null}   properties   Inline Properties
+   * @param  {string|null}   customerId   Customer Id
    * @return {Builder}                Builder
    */
-  match(alias, model, properties) {
+  match(alias, model, properties, customerId) {
     this.whereStatement("WHERE")
     this.statement()
 
-    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties)))
+    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties), customerId))
 
     return this
   }
 
-  optionalMatch(alias, model) {
+  optionalMatch(alias, model, customerId) {
     this.whereStatement("WHERE")
     this.statement("OPTIONAL MATCH")
 
-    this._current.match(new Match(alias, model))
+    this._current.match(new Match(alias, model, undefined, customerId))
 
     return this
   }
@@ -293,13 +294,14 @@ export default class Builder {
    * @param  {String} alias               Alias in query
    * @param  {Model|String}  model        Model definition
    * @param  {Object|null}   properties   Inline Properties
+   * @param  {string|null}   customerId   Customer ID
    * @return {Builder}                    Builder
    */
-  create(alias, model, properties) {
+  create(alias, model, properties, customerId) {
     this.whereStatement("WHERE")
     this.statement("CREATE")
 
-    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties)))
+    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties, iu), customerId))
 
     return this
   }
@@ -329,13 +331,14 @@ export default class Builder {
    * @param  {String}        alias        Alias in query
    * @param  {Model|String}  model        Model definition
    * @param  {Object|null}   properties   Inline Properties
+   * @param  {string|null}   customerId   Customer ID
    * @return {Builder}                    Builder
    */
-  merge(alias, model, properties) {
+  merge(alias, model, properties, customerId) {
     this.whereStatement("WHERE")
     this.statement("MERGE")
 
-    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties)))
+    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties), customerId))
 
     return this
   }
@@ -524,10 +527,11 @@ export default class Builder {
    * @param  {String} alias       Alias
    * @param  {Model}  model       Model definition
    * @param  {Object} properties  Properties
+   * @param  {string|null}   customerId   Customer ID
    * @return {Builder}
    */
-  to(alias, model, properties) {
-    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties)))
+  to(alias, model, properties, customerId) {
+    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties), customerId))
 
     return this
   }
@@ -537,8 +541,8 @@ export default class Builder {
    *
    * @return {Builder}
    */
-  toAnything() {
-    this._current.match(new Match())
+  toAnything(customerId) {
+    this._current.match(new Match(undefined, undefined, undefined, customerId))
 
     return this
   }
@@ -582,6 +586,8 @@ export default class Builder {
    */
   execute(query_mode = mode.WRITE) {
     const { query, params } = this.build()
+
+    console.log(query)
 
     let session
 

@@ -1,5 +1,5 @@
-import { DIRECTION_IN, DIRECTION_OUT } from "../RelationshipType"
 import Relationship from "../Relationship"
+import { DIRECTION_IN, DIRECTION_OUT } from "../RelationshipType"
 
 import GenerateDefaultValues from "./GenerateDefaultValues"
 import Validator from "./Validator"

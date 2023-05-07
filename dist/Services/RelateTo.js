@@ -4,17 +4,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = RelateTo;
-
-var _RelationshipType = require("../RelationshipType");
-
 var _Relationship = _interopRequireDefault(require("../Relationship"));
-
+var _RelationshipType = require("../RelationshipType");
 var _GenerateDefaultValues = _interopRequireDefault(require("./GenerateDefaultValues"));
-
 var _Validator = _interopRequireDefault(require("./Validator"));
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
 function RelateTo(neode, from, to, relationship, properties) {
   var force_create = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : false;
   return (0, _GenerateDefaultValues["default"])(neode, relationship, properties).then(function (properties) {
@@ -28,7 +22,6 @@ function RelateTo(neode, from, to, relationship, properties) {
       to_id: to.identity()
     };
     var set = "";
-
     if (Object.keys(properties).length) {
       set += "SET ";
       set += Object.keys(properties).map(function (key) {
@@ -36,7 +29,6 @@ function RelateTo(neode, from, to, relationship, properties) {
         return "rel.".concat(key, " = $set_").concat(key);
       }).join(", ");
     }
-
     var mode = force_create ? "CREATE" : "MERGE";
     var query = "\n                MATCH (from), (to)\n                WHERE id(from) = $from_id\n                AND id(to) = $to_id\n                ".concat(mode, " (from)").concat(direction_in, "-[rel:").concat(type, "]-").concat(direction_out, "(to)\n                ").concat(set, "\n                RETURN rel\n            ");
     return neode.writeCypher(query, params).then(function (res) {

@@ -70,13 +70,13 @@ function addDetachNode(neode, builder, from_alias, relationship, aliases) {
  * @param {Model}   model       Model definition
  * @param {Integer} to_depth    Maximum deletion depth
  */
-export default function DeleteNode(neode, identity, model, to_depth = MAX_EAGER_DEPTH) {
+export default function DeleteNode(neode, identity, model, to_depth = MAX_EAGER_DEPTH, customerId) {
   const alias = "this"
   // const to_delete = [];
   const aliases = [alias]
   // const depth = 1;
 
-  const builder = new Builder(neode).match(alias, model).whereId(alias, identity)
+  const builder = new Builder(neode).match(alias, model, undefined, customerId).whereId(alias, identity)
 
   // Cascade delete to relationships
   model.relationships().forEach(relationship => {

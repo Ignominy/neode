@@ -8,13 +8,13 @@ import { eagerNode } from '../Query/EagerUtils';
 const MAX_CREATE_DEPTH = 99;
 const ORIGINAL_ALIAS = 'this';
 */
-import GenerateDefaultValues from "./GenerateDefaultValues"
-import Validator from "./Validator"
 import Builder, { mode } from "../Query/Builder"
 import { eagerNode } from "../Query/EagerUtils"
+import GenerateDefaultValues from "./GenerateDefaultValues"
+import Validator from "./Validator"
 import { addNodeToStatement, ORIGINAL_ALIAS } from "./WriteUtils"
 
-export default function MergeOn(neode, model, merge_on, properties) {
+export default function MergeOn(neode, model, merge_on, properties, customerId) {
   return GenerateDefaultValues(neode, model, properties)
     .then(properties => Validator(neode, model, properties))
     .then(properties => {
@@ -22,10 +22,10 @@ export default function MergeOn(neode, model, merge_on, properties) {
 
       const builder = new Builder(neode)
 
-      addNodeToStatement(neode, builder, alias, model, properties, [alias], "merge", merge_on)
+      addNodeToStatement(neode, builder, alias, model, properties, [alias], "merge", merge_on, customerId)
 
       // Output
-      const output = eagerNode(neode, 1, alias, model)
+      const output = eagerNode(neode, 1, alias, model, customerId)
 
       return builder
         .return(output)
