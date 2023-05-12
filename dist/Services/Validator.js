@@ -249,10 +249,16 @@ function BuildValidationSchema(schema) {
  * @return {Promise}
  */
 function Validator(neode, model, properties) {
+  var _schema$HAS_ACCESS_TO, _schema$HAS_ACCESS_TO2, _schema$HAS_ACCESS_TO3;
   var schema = BuildValidationSchema(model, properties);
+  console.log("SCHEMA");
+  console.log(schema);
+  console.log(schema === null || schema === void 0 ? void 0 : (_schema$HAS_ACCESS_TO = schema.HAS_ACCESS_TO) === null || _schema$HAS_ACCESS_TO === void 0 ? void 0 : (_schema$HAS_ACCESS_TO2 = _schema$HAS_ACCESS_TO._inner) === null || _schema$HAS_ACCESS_TO2 === void 0 ? void 0 : (_schema$HAS_ACCESS_TO3 = _schema$HAS_ACCESS_TO2.items[0]) === null || _schema$HAS_ACCESS_TO3 === void 0 ? void 0 : _schema$HAS_ACCESS_TO3._inner.children);
   return new Promise(function (resolve, reject) {
     _joi["default"].validate(properties, schema, joi_options, function (err, validated) {
       if (err) {
+        console.log("HEEEY");
+        console.log(JSON.stringify(err));
         return reject(new _ValidationError["default"](err.details, properties, err));
       }
       return resolve(validated);

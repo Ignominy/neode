@@ -26,9 +26,10 @@ var ValidationError = /*#__PURE__*/function (_Error) {
   _inherits(ValidationError, _Error);
   var _super = _createSuper(ValidationError);
   function ValidationError(details, input, _joiError) {
+    var _details$message;
     var _this;
     _classCallCheck(this, ValidationError);
-    _this = _super.call(this, ERROR_VALIDATION, 422);
+    _this = _super.call(this, (_details$message = details === null || details === void 0 ? void 0 : details.message) !== null && _details$message !== void 0 ? _details$message : ERROR_VALIDATION, 422);
     _this.details = details;
     _this.input = input;
     _this._joiError = _joiError;

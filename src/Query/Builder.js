@@ -76,11 +76,11 @@ export default class Builder {
     return this
   }
 
-  optionalMatch(alias, model, customerId) {
+  optionalMatch(alias, model, properties, customerId) {
     this.whereStatement("WHERE")
     this.statement("OPTIONAL MATCH")
 
-    this._current.match(new Match(alias, model, undefined, customerId))
+    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties), customerId))
 
     return this
   }
@@ -301,7 +301,7 @@ export default class Builder {
     this.whereStatement("WHERE")
     this.statement("CREATE")
 
-    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties, iu), customerId))
+    this._current.match(new Match(alias, model, this._convertPropertyMap(alias, properties), customerId))
 
     return this
   }
@@ -587,7 +587,11 @@ export default class Builder {
   execute(query_mode = mode.WRITE) {
     const { query, params } = this.build()
 
-    console.log(query)
+    // console.log("------query------")
+    // console.log(query)
+    // console.log("------params------")
+    // console.log(params)
+    // console.log("------------------")
 
     let session
 

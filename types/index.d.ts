@@ -1186,3 +1186,7 @@ declare namespace Neode {
     toJson(): Promise<object>
   }
 }
+
+export interface RelationshipNode {
+  node: string | number | object
+}

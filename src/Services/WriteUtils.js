@@ -122,7 +122,13 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
       switch (relationship.type()) {
         // Single Relationship
         case "relationship":
-          addRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId)
+          const targetAlias = `${target_alias}`
+          const relAlias = `${rel_alias}`
+          aliases.push(targetAlias, relAlias)
+
+          addRelationshipToStatement(neode, builder, alias, relAlias, targetAlias, relationship, value, aliases, mode, customerId)
+
+          builder.with(...aliases)
           break
 
         // Array of Relationships
@@ -130,8 +136,14 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
           if (!Array.isArray(value)) value = [value]
 
           value.forEach((value, idx) => {
+            const targetAlias = `${target_alias}_${idx}`
+            const relAlias = `${rel_alias}_${idx}`
+            aliases.push(targetAlias, relAlias)
+
             // Carry alias through
             addRelationshipToStatement(neode, builder, alias, rel_alias + idx, target_alias + idx, relationship, value, aliases, mode, customerId)
+
+            builder.with(...aliases)
           })
           break
 
@@ -184,14 +196,14 @@ export function addRelationshipToStatement(neode, builder, alias, rel_alias, tar
 
   // If Node is passed, attempt to create a relationship to that specific node
   if (node_value instanceof Node) {
-    builder.match(target_alias).whereId(target_alias, node_value.identity())
+    builder.optionalMatch(target_alias, undefined, customerId).whereId(target_alias, node_value.identity())
   }
 
   // If Primary key is passed then try to match on that
   else if (typeof node_value === "string" || typeof node_value === "number") {
     const model = neode.model(relationship.target())
 
-    builder.merge(
+    builder.optionalMatch(
       target_alias,
       model,
       {

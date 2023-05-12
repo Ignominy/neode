@@ -5,14 +5,14 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = Create;
-var _GenerateDefaultValues = _interopRequireDefault(require("./GenerateDefaultValues"));
-var _Validator = _interopRequireDefault(require("./Validator"));
 var _Builder = _interopRequireWildcard(require("../Query/Builder"));
 var _EagerUtils = require("../Query/EagerUtils");
+var _GenerateDefaultValues = _interopRequireDefault(require("./GenerateDefaultValues"));
+var _Validator = _interopRequireDefault(require("./Validator"));
 var _WriteUtils = require("./WriteUtils");
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
 function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function Create(neode, model, properties, customerId) {
   return (0, _GenerateDefaultValues["default"])(neode, model, properties).then(function (properties) {
     return (0, _Validator["default"])(neode, model, properties);
@@ -25,6 +25,9 @@ function Create(neode, model, properties, customerId) {
     var output = (0, _EagerUtils.eagerNode)(neode, 1, alias, model, customerId);
     return builder["return"](output).execute(_Builder.mode.WRITE).then(function (res) {
       return neode.hydrateFirst(res, alias);
+    })["catch"](function (err) {
+      console.error(err);
+      throw new Error("Could not create node for model ".concat(model.name()));
     });
   });
 }

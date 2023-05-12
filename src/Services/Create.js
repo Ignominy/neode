@@ -1,7 +1,7 @@
-import GenerateDefaultValues from "./GenerateDefaultValues"
-import Validator from "./Validator"
 import Builder, { mode } from "../Query/Builder"
 import { eagerNode } from "../Query/EagerUtils"
+import GenerateDefaultValues from "./GenerateDefaultValues"
+import Validator from "./Validator"
 import { addNodeToStatement, ORIGINAL_ALIAS } from "./WriteUtils"
 
 export default function Create(neode, model, properties, customerId) {
@@ -21,5 +21,9 @@ export default function Create(neode, model, properties, customerId) {
         .return(output)
         .execute(mode.WRITE)
         .then(res => neode.hydrateFirst(res, alias))
+        .catch(err => {
+          console.error(err)
+          throw new Error(`Could not create node for model ${model.name()}`)
+        })
     })
 }
