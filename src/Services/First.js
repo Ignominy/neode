@@ -1,30 +1,30 @@
 import Builder, { mode } from "../Query/Builder"
 import { eagerNode } from "../Query/EagerUtils"
+import { ORIGINAL_ALIAS, addReadNodeToStatement } from "./ReadUtils"
+import Validator from "./Validator"
 
-export default function First(neode, model, key, value, customerId) {
-  const alias = "this"
+export default function First(neode, model, properties, extraEagerNames, customerId) {
+  return Validator(neode, model, properties, true).then(properties => {
+    const alias = ORIGINAL_ALIAS
 
-  const builder = new Builder(neode)
+    const builder = new Builder(neode)
 
-  // Match
-  builder.match(alias, model, undefined, customerId)
+    addReadNodeToStatement(neode, builder, alias, model, properties, undefined, [alias], customerId)
 
-  // Where
-  if (typeof key === "object") {
-    // Process a map of properties
-    Object.keys(key).forEach(property => {
-      builder.where(`${alias}.${property}`, key[property])
-    })
-  } else {
-    // Straight key/value lookup
-    builder.where(`${alias}.${key}`, value)
-  }
+    // Output
+    const output = eagerNode(neode, 1, alias, model, extraEagerNames, customerId)
 
-  const output = eagerNode(neode, 1, alias, model, customerId)
-
-  return builder
-    .return(output)
-    .limit(1)
-    .execute(mode.READ)
-    .then(res => neode.hydrateFirst(res, alias, model))
+    return builder
+      .return(output)
+      .limit(1)
+      .execute(mode.READ)
+      .then(res => {
+        if (!res) throw new Error(`Could not get nodes for model ${model.name()}`)
+        return neode.hydrateFirst(res, alias, model, extraEagerNames)
+      })
+      .catch(err => {
+        console.error(err)
+        throw new Error(`Could not get nodes for model ${model.name()}`)
+      })
+  })
 }

@@ -6,6 +6,7 @@ import FindById from "./Services/FindById"
 import FindWithinDistance from "./Services/FindWithinDistance"
 import First from "./Services/First"
 import MergeOn from "./Services/MergeOn"
+import Update from "./Services/Update"
 
 export default class Queryable {
   /**
@@ -31,23 +32,25 @@ export default class Queryable {
    *
    * @param  {object} properties
    * @param  {String|null} customerId
+   * @param  {String[]|null} extraEagerNames
    * @return {Promise}
    */
-  create(properties, customerId) {
-    return Create(this._neode, this, properties, customerId)
+  create(properties, extraEagerNames, customerId) {
+    return Create(this._neode, this, properties, extraEagerNames, customerId)
   }
 
   /**
    * Merge a node based on the defined indexes
    *
    * @param  {Object} properties
+   * @param  {String[]|null} extraEagerNames
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  merge(properties, customerId) {
+  merge(properties, extraEagerNames, customerId) {
     const merge_on = this.mergeFields()
 
-    return MergeOn(this._neode, this, merge_on, properties, customerId)
+    return MergeOn(this._neode, this, merge_on, properties, extraEagerNames, customerId)
   }
 
   /**
@@ -66,6 +69,24 @@ export default class Queryable {
   }
 
   /**
+   * Update a node based on the supplied properties
+   *
+   * @param  {Object} match Specific properties to match on
+   * @param  {Object} set   Properties to set
+   * @param  {String[]|null} extraEagerNames Extra eagers to load with this query
+   * @param  {String|null} customerId
+   * @return {Promise}
+   */
+  updateOn(match, set, extraEagerNames, customerId) {
+    const merge_on = Object.keys(match).filter(key => match[key] !== undefined)
+    Object.keys(set).forEach(key => set[key] === undefined && delete set[key])
+
+    const properties = { ...match, ...set }
+
+    return Update(this._neode, this, merge_on, properties, extraEagerNames, customerId)
+  }
+
+  /**
    * Delete all nodes for this model
    *
    * @return {Promise}
@@ -78,14 +99,15 @@ export default class Queryable {
    * Get a collection of nodes for this label
    *
    * @param  {Object}              properties
+   * @param  {String[]|Null}    extraEagerNames
    * @param  {String|Array|Object} order
    * @param  {Int}                 limit
    * @param  {Int}                 skip
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  all(properties, order, limit, skip, customerId) {
-    return FindAll(this._neode, this, properties, order, limit, skip, customerId)
+  all(properties, extraEagerNames, order, limit, skip, customerId) {
+    return FindAll(this._neode, this, properties, extraEagerNames, order, limit, skip, customerId)
   }
 
   /**
@@ -98,7 +120,7 @@ export default class Queryable {
   find(id, customerId) {
     const primary_key = this.primaryKey()
 
-    return this.first(primary_key, id, customerId)
+    return this.first({ [primary_key]: id }, customerId)
   }
 
   /**
@@ -106,30 +128,31 @@ export default class Queryable {
    *
    * @param  {String} model
    * @param  {int}    id
+   * @param  {String[]|Null}    extraEagerNames
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  findById(id, customerId) {
-    return FindById(this._neode, this, id, customerId)
+  findById(id, extraEagerNames, customerId) {
+    return FindById(this._neode, this, id, extraEagerNames, customerId)
   }
 
   /**
    * Find a Node by properties
    *
-   * @param  {String} label
-   * @param  {mixed}  key     Either a string for the property name or an object of values
-   * @param  {mixed}  value   Value
+   * @param  {Object} properties
+   * @param  {String[]|null} extraEagerNames
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  first(key, value, customerId) {
-    return First(this._neode, this, key, value, customerId)
+  first(properties, extraEagerNames, customerId) {
+    return First(this._neode, this, properties, extraEagerNames, customerId)
   }
 
   /**
    * Get a collection of nodes within a certain distance belonging to this label
    *
    * @param  {Object}              properties
+   * @param  {String[]|null}       extraEagerNames
    * @param  {String}              location_property
    * @param  {Object}              point
    * @param  {Int}                 distance
@@ -139,7 +162,7 @@ export default class Queryable {
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  withinDistance(location_property, point, distance, properties, order, limit, skip, customerId) {
-    return FindWithinDistance(this._neode, this, location_property, point, distance, properties, order, limit, skip, customerId)
+  withinDistance(location_property, point, distance, properties, extraEagerNames, order, limit, skip, customerId) {
+    return FindWithinDistance(this._neode, this, location_property, point, distance, properties, extraEagerNames, order, limit, skip, customerId)
   }
 }

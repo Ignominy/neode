@@ -7,11 +7,14 @@ import fs from "fs"
 import neo4j from "neo4j-driver"
 import path from "path"
 import Collection from "./Collection"
+import { valueToCypher } from "./Entity"
 import Factory from "./Factory"
 import Model from "./Model"
 import ModelMap from "./ModelMap"
 import Builder from "./Query/Builder"
 import Schema from "./Schema"
+import DeleteByProperties from "./Services/DeleteByProperties"
+import RelateByProperties from "./Services/RelateByProperties"
 import TransactionError from "./TransactionError"
 
 export default class Neode {
@@ -89,6 +92,31 @@ export default class Neode {
     })
 
     return new Neode(connection_string, username, password, enterprise, database, config)
+  }
+
+  static getCustomerIdLabel(customerId) {
+    return `cid_${customerId.replace(/-/g, "_")}`
+  }
+
+  static propertiesToCypher(model, properties) {
+    const resObj = {}
+
+    model.properties().forEach(property => {
+      const name = property.name()
+
+      // Skip if not set
+      if (!properties.hasOwnProperty(name)) {
+        return
+      }
+
+      const value = valueToCypher(property, properties[name])
+
+      if (value !== undefined) {
+        resObj[name] = value
+      }
+    })
+
+    return resObj
   }
 
   /**
@@ -263,6 +291,37 @@ export default class Neode {
    */
   relate(from, to, type, properties, force_create = false) {
     return from.relateTo(to, type, properties, force_create)
+  }
+
+  /**
+   * Relate two nodes based on the type and properties
+   *
+   * @param  {Model}  fromModel               Origin model
+   * @param  {Object} fromProperties          Origin properties
+   * @param  {String} type                    Type of Relationship definition
+   * @param  {Model}  toModel                 Target model
+   * @param  {Object} toProperties            Target properties
+   * @param  {Object} reltionshipProperties   Relationship properties
+   * @param  {String} customerId              Customer id
+   * @return {Promise}
+   */
+  relateByProperties(fromModel, fromProperties, type, toModel, toProperties, reltionshipProperties, customerId) {
+    return RelateByProperties(this, fromModel, fromProperties, type, toModel, toProperties, reltionshipProperties, customerId)
+  }
+
+  /**
+   * Delete relationship between nodes found by properties
+   *
+   * @param  {Model}  fromModel               Origin model
+   * @param  {Object} fromProperties          Origin properties
+   * @param  {String} type                    Type of Relationship definition
+   * @param  {Model}  toModel                 Target model
+   * @param  {Object} toProperties            Target properties
+   * @param  {String} customerId              Customer id
+   * @return {Promise}
+   */
+  deleteRelationshipByProperties(fromModel, fromProperties, type, toModel, toProperties, customerId) {
+    return DeleteByProperties(this, fromModel, fromProperties, type, toModel, toProperties, customerId)
   }
 
   /**
@@ -485,13 +544,12 @@ export default class Neode {
    * Find a Node by properties
    *
    * @param  {String} label
-   * @param  {mixed}  key     Either a string for the property name or an object of values
-   * @param  {mixed}  value   Value
+   * @param  {Object}  key     Object of values
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  first(label, key, value, customerId) {
-    return this.models.get(label).first(key, value, customerId)
+  first(label, properties, customerId) {
+    return this.models.get(label).first(properties, customerId)
   }
 
   /**
@@ -502,8 +560,8 @@ export default class Neode {
    * @param  {Definition|null} definition     Force Definition
    * @return {Collection}
    */
-  hydrate(res, alias, definition) {
-    return this.factory.hydrate(res, alias, definition)
+  hydrate(res, alias, definition, extraEagerNames) {
+    return this.factory.hydrate(res, alias, definition, extraEagerNames)
   }
 
   /**
@@ -513,8 +571,8 @@ export default class Neode {
    * @param  {String} alias  Alias of Node to pluck
    * @return {Node}
    */
-  hydrateFirst(res, alias, definition) {
-    return this.factory.hydrateFirst(res, alias, definition)
+  hydrateFirst(res, alias, definition, extraEagerNames) {
+    return this.factory.hydrateFirst(res, alias, definition, extraEagerNames)
   }
 
   /**

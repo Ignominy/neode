@@ -54,6 +54,14 @@ export function valueToCypher(property, value) {
     value = neo4j.int(value)
   }
 
+  if (property.convertToDatetime() && value !== null && value !== undefined) {
+    value = neo4j.DateTime.fromStandardDate(new Date(value))
+  }
+
+  if (property.convertToDate() && value !== null && value !== undefined) {
+    value = neo4j.Date.fromStandardDate(new Date(value))
+  }
+
   return value
 }
 

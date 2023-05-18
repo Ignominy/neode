@@ -4,15 +4,15 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = Validator;
-var _joi = _interopRequireDefault(require("@hapi/joi"));
+var Joi = _interopRequireWildcard(require("joi"));
 var _neo4jDriver = _interopRequireDefault(require("neo4j-driver"));
 var _Model = _interopRequireDefault(require("../Model"));
 var _Node = _interopRequireDefault(require("../Node"));
 var _RelationshipType = _interopRequireWildcard(require("../RelationshipType"));
 var _ValidationError = _interopRequireDefault(require("../ValidationError"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
 function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
@@ -20,7 +20,7 @@ function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key i
 function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return _typeof(key) === "symbol" ? key : String(key); }
 function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (_typeof(res) !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); } /* eslint-disable no-case-declarations */
 var joi_options = {
-  allowUnknown: true,
+  allowUnknown: false,
   abortEarly: false
 };
 
@@ -28,113 +28,204 @@ var joi_options = {
 var ignore = ["labels", "type", "default", "alias", "properties", "primary", "relationship", "target", "direction", "eager", "hidden", "readonly", "index", "unique", "cascade"];
 var booleans = ["optional", "forbidden", "strip", "positive", "negative", "port", "integer", "iso", "isoDate", "insensitive", "required", "truncate", "creditCard", "alphanum", "token", "hex", "hostname", "lowercase", "uppercase"];
 var booleanOrOptions = ["email", "ip", "uri", "base64", "normalize", "hex"];
-var temporal = _joi["default"].extend({
-  base: _joi["default"].object(),
-  name: "temporal",
-  language: {
-    before: "Value before minimum expected value",
-    after: "Value after minimum expected value"
+var temporalBase = Joi.object();
+var afterExtension = {
+  type: "temporal",
+  base: temporalBase,
+  messages: {
+    "temporal.after": "Value is before the minimum expected value"
   },
-  rules: [{
-    name: "after",
-    params: {
-      after: _joi["default"].alternatives([_joi["default"].date(), _joi["default"].string()])
-    },
-    validate: function validate(params, value, state, options) {
-      if (params.after === "now") {
-        params.after = new Date();
+  rules: {
+    after: {
+      method: function method(after) {
+        return this.$_addRule({
+          name: "after",
+          args: {
+            after: after
+          }
+        });
+      },
+      args: [{
+        name: "after",
+        assert: Joi.alternatives()["try"](Joi.date(), Joi.string()).required(),
+        message: "must be a date or a string"
+      }],
+      validate: function validate(value, helpers, _ref, options) {
+        var after = _ref.after;
+        if (after === "now") {
+          after = new Date();
+        }
+        if (after > new Date(value.toString())) {
+          return helpers.error("temporal.after");
+        }
+        return value;
       }
-      if (params.after > new Date(value.toString())) {
-        return this.createError("temporal.after", {
-          v: value
-        }, state, options);
-      }
-      return value;
     }
-  }, {
-    name: "before",
-    params: {
-      after: _joi["default"].alternatives([_joi["default"].date(), _joi["default"].string()])
-    },
-    validate: function validate(params, value, state, options) {
-      if (params.after === "now") {
-        params.after = new Date();
-      }
-      if (params.after < new Date(value.toString())) {
-        return this.createError("temporal.after", {
-          v: value
-        }, state, options);
-      }
-      return value;
-    }
-  }]
-});
-
-// TODO: Ugly
-var neoInteger = _joi["default"].extend({
-  // base: Joi.number(),
-  base: _joi["default"].alternatives()["try"]([_joi["default"].number().integer(), _joi["default"].object().type(_neo4jDriver["default"].types.Integer)]),
-  name: "integer",
-  language: {
-    before: "Value before minimum expected value",
-    after: "Value after minimum expected value"
+  }
+};
+var beforeExtension = {
+  type: "temporal",
+  base: temporalBase,
+  messages: {
+    "temporal.before": "Value is after the minimum expected value"
   },
-  rules: [{
-    name: "min",
-    params: {
-      min: _joi["default"].number()
-    },
-    validate: function validate(params, value, state, options) {
-      var compare = value instanceof _neo4jDriver["default"].types.Integer ? value.toNumber() : value;
-      if (params.min > compare) {
-        return this.createError("number.min", {
-          limit: params.min
-        }, state, options);
+  rules: {
+    before: {
+      method: function method(before) {
+        return this.$_addRule({
+          name: "before",
+          args: {
+            before: before
+          }
+        });
+      },
+      args: [{
+        name: "before",
+        assert: Joi.alternatives()["try"](Joi.date(), Joi.string()).required(),
+        message: "must be a date or a string"
+      }],
+      validate: function validate(value, helpers, _ref2, options) {
+        var before = _ref2.before;
+        if (before === "now") {
+          before = new Date();
+        }
+        if (before < new Date(value.toString())) {
+          return helpers.error("temporal.before");
+        }
+        return value;
       }
+    }
+  }
+};
+var temporal = Joi.extend(afterExtension, beforeExtension);
+var integerBase = Joi.custom(function (value, helpers) {
+  if (typeof value === "number" || value instanceof _neo4jDriver["default"].types.Integer) {
+    return value;
+  }
+  return helpers.error("any.invalid");
+}, "Custom integer validation");
+var minExtension = {
+  type: "integer",
+  base: integerBase,
+  messages: {
+    "integer.min": "Value is less than the minimum expected value"
+  },
+  rules: {
+    min: {
+      method: function method(min) {
+        return this.$_addRule({
+          name: "min",
+          args: {
+            min: min
+          }
+        });
+      },
+      args: [{
+        name: "min",
+        assert: Joi.number().required(),
+        message: "must be a number"
+      }],
+      validate: function validate(value, helpers, _ref3, options) {
+        var min = _ref3.min;
+        var compare = value instanceof _neo4jDriver["default"].types.Integer ? value.toNumber() : value;
+        if (min > compare) {
+          return helpers.error("integer.min");
+        }
+        return value;
+      }
+    }
+  }
+};
+var maxExtension = {
+  type: "integer",
+  base: integerBase,
+  messages: {
+    "integer.max": "Value is greater than the maximum expected value"
+  },
+  rules: {
+    max: {
+      method: function method(max) {
+        return this.$_addRule({
+          name: "max",
+          args: {
+            max: max
+          }
+        });
+      },
+      args: [{
+        name: "max",
+        assert: Joi.number().required(),
+        message: "must be a number"
+      }],
+      validate: function validate(value, helpers, _ref4, options) {
+        var max = _ref4.max;
+        var compare = value instanceof _neo4jDriver["default"].types.Integer ? value.toNumber() : value;
+        if (max < compare) {
+          return helpers.error("integer.max");
+        }
+        return value;
+      }
+    }
+  }
+};
+var multipleExtension = {
+  type: "integer",
+  base: integerBase,
+  messages: {
+    "integer.multiple": "Value is not a multiple of the given number"
+  },
+  rules: {
+    multiple: {
+      method: function method(multiple) {
+        return this.$_addRule({
+          name: "multiple",
+          args: {
+            multiple: multiple
+          }
+        });
+      },
+      args: [{
+        name: "multiple",
+        assert: Joi.number().required(),
+        message: "must be a number"
+      }],
+      validate: function validate(value, helpers, _ref5, options) {
+        var multiple = _ref5.multiple;
+        var compare = value instanceof _neo4jDriver["default"].types.Integer ? value.toNumber() : value;
+        if (compare % multiple !== 0) {
+          return helpers.error("integer.multiple");
+        }
+        return value;
+      }
+    }
+  }
+};
+var neoInteger = Joi.extend(minExtension, maxExtension, multipleExtension);
+var pointExtension = {
+  type: "point",
+  base: Joi.custom(function (value, helpers) {
+    if (value instanceof _neo4jDriver["default"].types.Point) {
       return value;
     }
-  }, {
-    name: "max",
-    params: {
-      max: _joi["default"].number()
-    },
-    validate: function validate(params, value, state, options) {
-      var compare = value instanceof _neo4jDriver["default"].types.Integer ? value.toNumber() : value;
-      if (params.max < compare) {
-        return this.createError("number.max", {
-          limit: params.max
-        }, state, options);
-      }
-      return value;
-    }
-  }, {
-    name: "multiple",
-    params: {
-      multiple: _joi["default"].number()
-    },
-    validate: function validate(params, value, state, options) {
-      var compare = value instanceof _neo4jDriver["default"].types.Integer ? value.toNumber() : value;
-      if (compare % params.multiple != 0) {
-        return this.createError("number.multiple", {
-          multiple: params.max
-        }, state, options);
-      }
-      return value;
-    }
-  }]
-});
-var point = _joi["default"].extend({
-  base: _joi["default"].object().type(_neo4jDriver["default"].types.Point),
-  name: "point"
-});
+    return helpers.message({
+      custom: "value is not an instance of neo4j.types.Point"
+    });
+  })
+};
+var point = Joi.extend(pointExtension);
 function nodeSchema() {
-  return _joi["default"].alternatives([_joi["default"].object().type(_Node["default"]), _joi["default"].string(), _joi["default"].number(), _joi["default"].object()]);
+  return Joi.alternatives([Joi.custom(function (value, helpers) {
+    if (value instanceof _Node["default"]) {
+      return value;
+    }
+    return helpers.error("any.invalid");
+  }, "Custom Node validation"), Joi.string(), Joi.number(), Joi.object()]);
 }
 function relationshipSchema(alias) {
   var properties = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-  return _joi["default"].object().keys(_objectSpread(_defineProperty({}, alias, nodeSchema().required()), BuildValidationSchema(properties)));
+  return Joi.object().keys(_objectSpread(_defineProperty({}, alias, nodeSchema().required()), BuildValidationSchema(properties)));
 }
-function BuildValidationSchema(schema) {
+function BuildValidationSchema(schema, allOptional) {
   if (schema instanceof _Model["default"] || schema instanceof _RelationshipType["default"]) {
     schema = schema.schema();
   }
@@ -152,53 +243,58 @@ function BuildValidationSchema(schema) {
         validation = nodeSchema();
         break;
       case "nodes":
-        validation = _joi["default"].array().items(nodeSchema());
+        validation = Joi.array().items(nodeSchema());
         break;
       case "relationship":
         // TODO: Clean up... This should probably be an object
         validation = relationshipSchema(config.alias || _RelationshipType.DEFAULT_ALIAS, config.properties);
         break;
       case "relationships":
-        validation = _joi["default"].array().items(relationshipSchema(config.alias || _RelationshipType.DEFAULT_ALIAS, config.properties));
+        validation = Joi.array().items(relationshipSchema(config.alias || _RelationshipType.DEFAULT_ALIAS, config.properties));
         break;
       case "uuid":
-        validation = _joi["default"].string().guid({
+        validation = Joi.string().guid({
           version: "uuidv4"
         });
         break;
       case "string":
+        validation = Joi[config.type]().allow("");
+        break;
       case "number":
       case "boolean":
-        validation = _joi["default"][config.type]();
+        validation = Joi[config.type]();
         break;
       case "datetime":
-        validation = temporal.temporal().type(_neo4jDriver["default"].types.DateTime);
+        validation = temporal.temporal();
         break;
       case "date":
-        validation = temporal.temporal().type(_neo4jDriver["default"].types.Date);
+        validation = temporal.temporal();
         break;
       case "time":
-        validation = temporal.temporal().type(_neo4jDriver["default"].types.Time);
+        validation = temporal.temporal();
         break;
       case "localdate":
-        validation = temporal.temporal().type(_neo4jDriver["default"].types.LocalDate);
+        validation = temporal.temporal();
         break;
       case "localtime":
-        validation = temporal.temporal().type(_neo4jDriver["default"].types.LocalTime);
+        validation = temporal.temporal();
         break;
       case "point":
-        validation = point.point().type(_neo4jDriver["default"].types.Point);
+        validation = point.point();
         break;
       case "int":
       case "integer":
         validation = neoInteger.integer();
         break;
       case "float":
-        validation = _joi["default"].number();
+        validation = Joi.number();
         break;
       default:
-        validation = _joi["default"].any();
+        validation = Joi.any();
         break;
+    }
+    if (allOptional) {
+      validation = validation.optional();
     }
     if (!config.required) {
       validation = validation.allow(null);
@@ -224,7 +320,7 @@ function BuildValidationSchema(schema) {
           validation = validation[validator]();
         }
       } else if (booleans.indexOf(validator) > -1) {
-        if (options === true) {
+        if (options === true && !(validator === "required" && allOptional)) {
           validation = validation[validator](options);
         }
       } else if (ignore.indexOf(validator) == -1 && validation[validator]) {
@@ -249,19 +345,14 @@ function BuildValidationSchema(schema) {
  * @return {Promise}
  */
 function Validator(neode, model, properties) {
-  var _schema$HAS_ACCESS_TO, _schema$HAS_ACCESS_TO2, _schema$HAS_ACCESS_TO3;
-  var schema = BuildValidationSchema(model, properties);
-  console.log("SCHEMA");
-  console.log(schema);
-  console.log(schema === null || schema === void 0 ? void 0 : (_schema$HAS_ACCESS_TO = schema.HAS_ACCESS_TO) === null || _schema$HAS_ACCESS_TO === void 0 ? void 0 : (_schema$HAS_ACCESS_TO2 = _schema$HAS_ACCESS_TO._inner) === null || _schema$HAS_ACCESS_TO2 === void 0 ? void 0 : (_schema$HAS_ACCESS_TO3 = _schema$HAS_ACCESS_TO2.items[0]) === null || _schema$HAS_ACCESS_TO3 === void 0 ? void 0 : _schema$HAS_ACCESS_TO3._inner.children);
+  var allOptional = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+  var schema = BuildValidationSchema(model, allOptional);
   return new Promise(function (resolve, reject) {
-    _joi["default"].validate(properties, schema, joi_options, function (err, validated) {
-      if (err) {
-        console.log("HEEEY");
-        console.log(JSON.stringify(err));
-        return reject(new _ValidationError["default"](err.details, properties, err));
-      }
+    try {
+      var validated = Joi.object(schema).validateAsync(properties, joi_options);
       return resolve(validated);
-    });
+    } catch (err) {
+      return reject(new _ValidationError["default"](err.details, properties, err));
+    }
   });
 }

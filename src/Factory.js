@@ -23,12 +23,12 @@ export default class Factory {
    * @param  {String} alias  Alias of Node to pluck
    * @return {Node}
    */
-  hydrateFirst(res, alias, definition) {
+  hydrateFirst(res, alias, definition, extraEagerNames) {
     if (!res || !res.records.length) {
       return false
     }
 
-    return this.hydrateNode(res.records[0].get(alias), definition)
+    return this.hydrateNode(res.records[0].get(alias), definition, extraEagerNames)
   }
 
   /**
@@ -40,12 +40,12 @@ export default class Factory {
    * @return {Collection}
    */
 
-  hydrate(res, alias, definition) {
+  hydrate(res, alias, definition, extraEagerNames) {
     if (!res) {
       return false
     }
 
-    const nodes = res.records.map(row => this.hydrateNode(row.get(alias), definition))
+    const nodes = res.records.map(row => this.hydrateNode(row.get(alias), definition, extraEagerNames))
 
     return new Collection(this._neode, nodes)
   }
@@ -67,7 +67,7 @@ export default class Factory {
    * @param {Model|String|null}   definition
    * @return {Node}
    */
-  hydrateNode(record, definition) {
+  hydrateNode(record, definition, extraEagerNames) {
     // Is there no better way to check this?!
     if (neo4j.isInt(record.identity) && Array.isArray(record.labels)) {
       record = { ...record.properties, [EAGER_ID]: record.identity, [EAGER_LABELS]: record.labels }
@@ -100,9 +100,21 @@ export default class Factory {
 
     // Create Node Instance
     const node = new Node(this._neode, definition, identity, labels, properties)
+    // Create an array of all eagers and extra eagers
+    const eagers = definition.eager()
+
+    if (extraEagerNames) {
+      const relationships = definition.relationships()
+
+      relationships.forEach(relationship => {
+        if (extraEagerNames.includes(relationship.name()) && !eagers.some(x => x.name() === relationship.name())) {
+          eagers.push(relationship)
+        }
+      })
+    }
 
     // Add eagerly loaded props
-    definition.eager().forEach(eager => {
+    eagers.forEach(eager => {
       const name = eager.name()
 
       if (!record[name]) {

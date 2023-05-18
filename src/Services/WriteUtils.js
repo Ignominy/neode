@@ -1,6 +1,7 @@
 import { valueToCypher } from "../Entity"
 import Node from "../Node"
 import GenerateDefaultValues from "./GenerateDefaultValues"
+import { addReadNodeToStatement } from "./ReadUtils"
 
 export const MAX_CREATE_DEPTH = 99
 export const ORIGINAL_ALIAS = "this"
@@ -8,7 +9,7 @@ export const ORIGINAL_ALIAS = "this"
 /**
  * Split properties into
  *
- * @param  {String}  mode        'create' or 'merge'
+ * @param  {String}  mode        'create' or 'merge' or 'update'
  * @param  {Model}   model        Model to merge on
  * @param  {Object}  properties   Map of properties
  * @param  {Array}   merge_on     Array of properties explicitly stated to merge on
@@ -25,7 +26,7 @@ function splitProperties(mode, model, properties, merge_on = []) {
     const name = property.name()
 
     // Skip if not set
-    if (!properties.hasOwnProperty(name)) {
+    if (!properties.hasOwnProperty(name) || properties[name] === undefined) {
       return
     }
 
@@ -47,6 +48,11 @@ function splitProperties(mode, model, properties, merge_on = []) {
     else if (!property.readonly()) {
       set[name] = value
     }
+
+    // Set all properties that are writable on update
+    if (mode == "update" && value !== undefined && !property.protected() && !property.primary() && !property.readonly()) {
+      set[name] = value
+    }
   })
 
   return {
@@ -66,7 +72,7 @@ function splitProperties(mode, model, properties, merge_on = []) {
  * @param {Model}   model       Model
  * @param {Object}  properties  Map of properties
  * @param {Array}   aliases     Aliases to carry through in with statement
- * @param {String}  mode        'create' or 'merge'
+ * @param {String}  mode        'create' or 'merge' or 'update'
  * @param {Array}   merge_on    Which properties should we merge on?
  */
 export function addNodeToStatement(neode, builder, alias, model, properties, aliases = [], mode = "create", merge_on = [], customerId) {
@@ -79,7 +85,7 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
   }
 
   // Create
-  builder[mode](alias, model, inline, customerId)
+  builder[mode === "update" ? "match" : mode](alias, model, inline, customerId)
 
   // On create set
   if (Object.keys(on_create).length) {
@@ -95,16 +101,9 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
     })
   }
 
-  // Set
-  if (Object.keys(set).length) {
-    Object.entries(set).forEach(([key, value]) => {
-      builder.set(`${alias}.${key}`, value)
-    })
-  }
-
   // Relationships
   model.relationships().forEach((relationship, key) => {
-    if (properties.hasOwnProperty(key)) {
+    if (properties.hasOwnProperty(key) && properties[key] != null) {
       let value = properties[key]
 
       const rel_alias = `${alias}_${key}_rel`
@@ -124,9 +123,11 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
         case "relationship":
           const targetAlias = `${target_alias}`
           const relAlias = `${rel_alias}`
-          aliases.push(targetAlias, relAlias)
+          aliases.push(targetAlias)
 
           addRelationshipToStatement(neode, builder, alias, relAlias, targetAlias, relationship, value, aliases, mode, customerId)
+
+          aliases.push(relAlias)
 
           builder.with(...aliases)
           break
@@ -136,12 +137,14 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
           if (!Array.isArray(value)) value = [value]
 
           value.forEach((value, idx) => {
-            const targetAlias = `${target_alias}_${idx}`
-            const relAlias = `${rel_alias}_${idx}`
-            aliases.push(targetAlias, relAlias)
+            const targetAlias = `${target_alias}${idx}`
+            const relAlias = `${rel_alias}${idx}`
+            aliases.push(targetAlias)
 
             // Carry alias through
-            addRelationshipToStatement(neode, builder, alias, rel_alias + idx, target_alias + idx, relationship, value, aliases, mode, customerId)
+            addRelationshipToStatement(neode, builder, alias, relAlias, targetAlias, relationship, value, aliases, mode, customerId)
+
+            aliases.push(relAlias)
 
             builder.with(...aliases)
           })
@@ -164,6 +167,13 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
     }
   })
 
+  // Set
+  if (Object.keys(set).length) {
+    Object.entries(set).forEach(([key, value]) => {
+      builder.set(`${alias}.${key}`, value)
+    })
+  }
+
   return builder
 }
 
@@ -178,7 +188,7 @@ export function addNodeToStatement(neode, builder, alias, model, properties, ali
  * @param {Relationship}    relationship    Model
  * @param {Object}          value           Value map
  * @param {Array}           aliases         Aliases to carry through in with statement
- * @param {String}          mode            'create' or 'merge'
+ * @param {String}          mode            'create' or 'merge' or 'update'
  * @param {String|null}     customerId      Customer ID
  */
 export function addRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId) {
@@ -221,22 +231,29 @@ export function addRelationshipToStatement(neode, builder, alias, rel_alias, tar
       throw new Error(`Couldn't find a target model for ${relationship.target()} in ${relationship.name()}.  Did you use module.exports?`)
     }
 
-    node_value = GenerateDefaultValues.async(neode, model, node_value)
+    if (mode === "update") {
+      console.log(node_value)
+      addReadNodeToStatement(neode, builder, target_alias, model, node_value, undefined, aliases, customerId)
+    } else {
+      node_value = GenerateDefaultValues.async(neode, model, node_value)
 
-    addNodeToStatement(neode, builder, target_alias, model, node_value, aliases, mode, model.mergeFields(), customerId)
+      addNodeToStatement(neode, builder, target_alias, model, node_value, aliases, mode, model.mergeFields(), customerId)
+    }
   }
 
   // Create the Relationship
-  builder[mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias)
+  builder[mode === "update" ? "match" : mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias)
 
-  // Set Relationship Properties
-  relationship.properties().forEach(property => {
-    const name = property.name()
+  if (mode !== "update") {
+    // Set Relationship Properties
+    relationship.properties().forEach(property => {
+      const name = property.name()
 
-    if (value.hasOwnProperty(name)) {
-      builder.set(`${rel_alias}.${name}`, value[name])
-    }
-  })
+      if (value.hasOwnProperty(name)) {
+        builder.set(`${rel_alias}.${name}`, value[name])
+      }
+    })
+  }
 }
 
 /**
@@ -250,7 +267,7 @@ export function addRelationshipToStatement(neode, builder, alias, rel_alias, tar
  * @param {Relationship}    relationship    Model
  * @param {Object}          value           Value map
  * @param {Array}           aliases         Aliases to carry through in with statement
- * @param {String}  mode        'create' or 'merge'
+ * @param {String}  mode        'create' or 'merge' or 'update'
  * @param {String|null}     customerId      Customer ID
  */
 export function addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId) {
@@ -266,7 +283,7 @@ export function addNodeRelationshipToStatement(neode, builder, alias, rel_alias,
   else if (typeof value === "string" || typeof value === "number") {
     const model = neode.model(relationship.target())
 
-    builder.merge(
+    builder.match(
       target_alias,
       model,
       {
@@ -285,11 +302,15 @@ export function addNodeRelationshipToStatement(neode, builder, alias, rel_alias,
       throw new Error(`Couldn't find a target model for ${relationship.target()} in ${relationship.name()}.  Did you use module.exports?`)
     }
 
-    value = GenerateDefaultValues.async(neode, model, value)
+    if (mode === "update") {
+      addReadNodeToStatement(neode, builder, target_alias, model, value, undefined, aliases, customerId)
+    } else {
+      value = GenerateDefaultValues.async(neode, model, value)
 
-    addNodeToStatement(neode, builder, target_alias, model, value, aliases, mode, model.mergeFields(), customerId)
+      addNodeToStatement(neode, builder, target_alias, model, value, aliases, mode, model.mergeFields(), customerId)
+    }
   }
 
   // Create the Relationship
-  builder[mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias)
+  builder[mode === "update" ? "match" : mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias)
 }

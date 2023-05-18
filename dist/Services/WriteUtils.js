@@ -11,6 +11,7 @@ exports.addRelationshipToStatement = addRelationshipToStatement;
 var _Entity = require("../Entity");
 var _Node = _interopRequireDefault(require("../Node"));
 var _GenerateDefaultValues = _interopRequireDefault(require("./GenerateDefaultValues"));
+var _ReadUtils = require("./ReadUtils");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return _typeof(key) === "symbol" ? key : String(key); }
@@ -32,7 +33,7 @@ var ORIGINAL_ALIAS = "this";
 /**
  * Split properties into
  *
- * @param  {String}  mode        'create' or 'merge'
+ * @param  {String}  mode        'create' or 'merge' or 'update'
  * @param  {Model}   model        Model to merge on
  * @param  {Object}  properties   Map of properties
  * @param  {Array}   merge_on     Array of properties explicitly stated to merge on
@@ -51,7 +52,7 @@ function splitProperties(mode, model, properties) {
     var name = property.name();
 
     // Skip if not set
-    if (!properties.hasOwnProperty(name)) {
+    if (!properties.hasOwnProperty(name) || properties[name] === undefined) {
       return;
     }
     var value = (0, _Entity.valueToCypher)(property, properties[name]);
@@ -72,6 +73,11 @@ function splitProperties(mode, model, properties) {
     else if (!property.readonly()) {
       set[name] = value;
     }
+
+    // Set all properties that are writable on update
+    if (mode == "update" && value !== undefined && !property["protected"]() && !property.primary() && !property.readonly()) {
+      set[name] = value;
+    }
   });
   return {
     inline: inline,
@@ -90,7 +96,7 @@ function splitProperties(mode, model, properties) {
  * @param {Model}   model       Model
  * @param {Object}  properties  Map of properties
  * @param {Array}   aliases     Aliases to carry through in with statement
- * @param {String}  mode        'create' or 'merge'
+ * @param {String}  mode        'create' or 'merge' or 'update'
  * @param {Array}   merge_on    Which properties should we merge on?
  */
 function addNodeToStatement(neode, builder, alias, model, properties) {
@@ -111,7 +117,7 @@ function addNodeToStatement(neode, builder, alias, model, properties) {
   }
 
   // Create
-  builder[mode](alias, model, inline, customerId);
+  builder[mode === "update" ? "match" : mode](alias, model, inline, customerId);
 
   // On create set
   if (Object.keys(on_create).length) {
@@ -133,19 +139,9 @@ function addNodeToStatement(neode, builder, alias, model, properties) {
     });
   }
 
-  // Set
-  if (Object.keys(set).length) {
-    Object.entries(set).forEach(function (_ref5) {
-      var _ref6 = _slicedToArray(_ref5, 2),
-        key = _ref6[0],
-        value = _ref6[1];
-      builder.set("".concat(alias, ".").concat(key), value);
-    });
-  }
-
   // Relationships
   model.relationships().forEach(function (relationship, key) {
-    if (properties.hasOwnProperty(key)) {
+    if (properties.hasOwnProperty(key) && properties[key] != null) {
       var value = properties[key];
       var rel_alias = "".concat(alias, "_").concat(key, "_rel");
       var target_alias = "".concat(alias, "_").concat(key, "_node");
@@ -162,8 +158,9 @@ function addNodeToStatement(neode, builder, alias, model, properties) {
         case "relationship":
           var targetAlias = "".concat(target_alias);
           var relAlias = "".concat(rel_alias);
-          aliases.push(targetAlias, relAlias);
+          aliases.push(targetAlias);
           addRelationshipToStatement(neode, builder, alias, relAlias, targetAlias, relationship, value, aliases, mode, customerId);
+          aliases.push(relAlias);
           builder["with"].apply(builder, _toConsumableArray(aliases));
           break;
 
@@ -171,12 +168,13 @@ function addNodeToStatement(neode, builder, alias, model, properties) {
         case "relationships":
           if (!Array.isArray(value)) value = [value];
           value.forEach(function (value, idx) {
-            var targetAlias = "".concat(target_alias, "_").concat(idx);
-            var relAlias = "".concat(rel_alias, "_").concat(idx);
-            aliases.push(targetAlias, relAlias);
+            var targetAlias = "".concat(target_alias).concat(idx);
+            var relAlias = "".concat(rel_alias).concat(idx);
+            aliases.push(targetAlias);
 
             // Carry alias through
-            addRelationshipToStatement(neode, builder, alias, rel_alias + idx, target_alias + idx, relationship, value, aliases, mode, customerId);
+            addRelationshipToStatement(neode, builder, alias, relAlias, targetAlias, relationship, value, aliases, mode, customerId);
+            aliases.push(relAlias);
             builder["with"].apply(builder, _toConsumableArray(aliases));
           });
           break;
@@ -196,6 +194,16 @@ function addNodeToStatement(neode, builder, alias, model, properties) {
       }
     }
   });
+
+  // Set
+  if (Object.keys(set).length) {
+    Object.entries(set).forEach(function (_ref5) {
+      var _ref6 = _slicedToArray(_ref5, 2),
+        key = _ref6[0],
+        value = _ref6[1];
+      builder.set("".concat(alias, ".").concat(key), value);
+    });
+  }
   return builder;
 }
 
@@ -210,7 +218,7 @@ function addNodeToStatement(neode, builder, alias, model, properties) {
  * @param {Relationship}    relationship    Model
  * @param {Object}          value           Value map
  * @param {Array}           aliases         Aliases to carry through in with statement
- * @param {String}          mode            'create' or 'merge'
+ * @param {String}          mode            'create' or 'merge' or 'update'
  * @param {String|null}     customerId      Customer ID
  */
 function addRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId) {
@@ -242,20 +250,26 @@ function addRelationshipToStatement(neode, builder, alias, rel_alias, target_ali
     if (!_model) {
       throw new Error("Couldn't find a target model for ".concat(relationship.target(), " in ").concat(relationship.name(), ".  Did you use module.exports?"));
     }
-    node_value = _GenerateDefaultValues["default"].async(neode, _model, node_value);
-    addNodeToStatement(neode, builder, target_alias, _model, node_value, aliases, mode, _model.mergeFields(), customerId);
+    if (mode === "update") {
+      console.log(node_value);
+      (0, _ReadUtils.addReadNodeToStatement)(neode, builder, target_alias, _model, node_value, undefined, aliases, customerId);
+    } else {
+      node_value = _GenerateDefaultValues["default"].async(neode, _model, node_value);
+      addNodeToStatement(neode, builder, target_alias, _model, node_value, aliases, mode, _model.mergeFields(), customerId);
+    }
   }
 
   // Create the Relationship
-  builder[mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias);
-
-  // Set Relationship Properties
-  relationship.properties().forEach(function (property) {
-    var name = property.name();
-    if (value.hasOwnProperty(name)) {
-      builder.set("".concat(rel_alias, ".").concat(name), value[name]);
-    }
-  });
+  builder[mode === "update" ? "match" : mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias);
+  if (mode !== "update") {
+    // Set Relationship Properties
+    relationship.properties().forEach(function (property) {
+      var name = property.name();
+      if (value.hasOwnProperty(name)) {
+        builder.set("".concat(rel_alias, ".").concat(name), value[name]);
+      }
+    });
+  }
 }
 
 /**
@@ -269,7 +283,7 @@ function addRelationshipToStatement(neode, builder, alias, rel_alias, target_ali
  * @param {Relationship}    relationship    Model
  * @param {Object}          value           Value map
  * @param {Array}           aliases         Aliases to carry through in with statement
- * @param {String}  mode        'create' or 'merge'
+ * @param {String}  mode        'create' or 'merge' or 'update'
  * @param {String|null}     customerId      Customer ID
  */
 function addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId) {
@@ -284,7 +298,7 @@ function addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target
   // If Primary key is passed then try to match on that
   else if (typeof value === "string" || typeof value === "number") {
     var model = neode.model(relationship.target());
-    builder.merge(target_alias, model, _defineProperty({}, model.primaryKey(), value), customerId);
+    builder.match(target_alias, model, _defineProperty({}, model.primaryKey(), value), customerId);
   }
   // If Map is passed, attempt to create that node and then relate
   // TODO: What happens when we need to validate this?
@@ -294,10 +308,14 @@ function addNodeRelationshipToStatement(neode, builder, alias, rel_alias, target
     if (!_model2) {
       throw new Error("Couldn't find a target model for ".concat(relationship.target(), " in ").concat(relationship.name(), ".  Did you use module.exports?"));
     }
-    value = _GenerateDefaultValues["default"].async(neode, _model2, value);
-    addNodeToStatement(neode, builder, target_alias, _model2, value, aliases, mode, _model2.mergeFields(), customerId);
+    if (mode === "update") {
+      (0, _ReadUtils.addReadNodeToStatement)(neode, builder, target_alias, _model2, value, undefined, aliases, customerId);
+    } else {
+      value = _GenerateDefaultValues["default"].async(neode, _model2, value);
+      addNodeToStatement(neode, builder, target_alias, _model2, value, aliases, mode, _model2.mergeFields(), customerId);
+    }
   }
 
   // Create the Relationship
-  builder[mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias);
+  builder[mode === "update" ? "match" : mode](alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias);
 }

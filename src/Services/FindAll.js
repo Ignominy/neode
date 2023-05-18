@@ -1,37 +1,32 @@
 import Builder, { mode } from "../Query/Builder"
 import { eagerNode } from "../Query/EagerUtils"
+import { addReadNodeToStatement } from "./ReadUtils"
+import Validator from "./Validator"
+import { ORIGINAL_ALIAS } from "./WriteUtils"
 
-export default function FindAll(neode, model, properties, order, limit, skip, customerId) {
-  const alias = "this"
+export default function FindAll(neode, model, properties, extraEagerNames, order, limit, skip, customerId) {
+  return Validator(neode, model, properties, true).then(properties => {
+    const alias = ORIGINAL_ALIAS
 
-  const builder = new Builder(neode)
+    const builder = new Builder(neode)
 
-  // Match
-  builder.match(alias, model, undefined, customerId)
+    addReadNodeToStatement(neode, builder, alias, model, properties, order, [alias], customerId)
 
-  // Where
-  if (properties) {
-    Object.keys(properties).forEach(key => {
-      builder.where(`${alias}.${key}`, properties[key])
-    })
-  }
+    // Output
+    const output = eagerNode(neode, 1, alias, model, extraEagerNames, customerId)
 
-  // Order
-  if (typeof order === "string") {
-    builder.orderBy(`${alias}.${order}`)
-  } else if (typeof order === "object") {
-    Object.keys(order).forEach(key => {
-      builder.orderBy(`${alias}.${key}`, order[key])
-    })
-  }
-
-  // Output
-  const output = eagerNode(neode, 1, alias, model, customerId)
-
-  return builder
-    .return(output)
-    .limit(limit)
-    .skip(skip)
-    .execute(mode.READ)
-    .then(res => neode.hydrate(res, alias))
+    return builder
+      .return(output)
+      .limit(limit)
+      .skip(skip)
+      .execute(mode.READ)
+      .then(res => {
+        if (!res) throw new Error(`Could not get nodes for model ${model.name()}`)
+        return neode.hydrate(res, alias, model, extraEagerNames)
+      })
+      .catch(err => {
+        console.error(err)
+        throw new Error(`Could not get nodes for model ${model.name()}`)
+      })
+  })
 }

@@ -73,6 +73,12 @@ function valueToCypher(property, value) {
   if (property.convertToInteger() && value !== null && value !== undefined) {
     value = _neo4jDriver["default"]["int"](value);
   }
+  if (property.convertToDatetime() && value !== null && value !== undefined) {
+    value = _neo4jDriver["default"].DateTime.fromStandardDate(new Date(value));
+  }
+  if (property.convertToDate() && value !== null && value !== undefined) {
+    value = _neo4jDriver["default"].Date.fromStandardDate(new Date(value));
+  }
   return value;
 }
 var Entity = /*#__PURE__*/function () {

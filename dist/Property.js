@@ -87,6 +87,16 @@ var Property = /*#__PURE__*/function () {
     value: function convertToInteger() {
       return this._type == "int" || this._type == "integer";
     }
+  }, {
+    key: "convertToDatetime",
+    value: function convertToDatetime() {
+      return this._type == "datetime";
+    }
+  }, {
+    key: "convertToDate",
+    value: function convertToDate() {
+      return this._type == "date";
+    }
   }]);
   return Property;
 }();

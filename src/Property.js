@@ -61,4 +61,12 @@ export default class Property {
   convertToInteger() {
     return this._type == "int" || this._type == "integer"
   }
+
+  convertToDatetime() {
+    return this._type == "datetime"
+  }
+
+  convertToDate() {
+    return this._type == "date"
+  }
 }

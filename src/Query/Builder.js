@@ -313,13 +313,15 @@ export default class Builder {
    */
   _convertPropertyMap(alias, properties) {
     if (properties) {
-      return Object.keys(properties).map(key => {
-        const property_alias = `${alias}_${key}`
+      return Object.keys(properties)
+        .filter(key => properties[key] !== undefined)
+        .map(key => {
+          const property_alias = `${alias}_${key}`
 
-        this._params[property_alias] = properties[key]
+          this._params[property_alias] = properties[key]
 
-        return new Property(key, property_alias)
-      })
+          return new Property(key, property_alias)
+        })
     }
 
     return []

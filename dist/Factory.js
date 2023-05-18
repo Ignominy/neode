@@ -40,11 +40,11 @@ var Factory = /*#__PURE__*/function () {
    */
   _createClass(Factory, [{
     key: "hydrateFirst",
-    value: function hydrateFirst(res, alias, definition) {
+    value: function hydrateFirst(res, alias, definition, extraEagerNames) {
       if (!res || !res.records.length) {
         return false;
       }
-      return this.hydrateNode(res.records[0].get(alias), definition);
+      return this.hydrateNode(res.records[0].get(alias), definition, extraEagerNames);
     }
 
     /**
@@ -57,13 +57,13 @@ var Factory = /*#__PURE__*/function () {
      */
   }, {
     key: "hydrate",
-    value: function hydrate(res, alias, definition) {
+    value: function hydrate(res, alias, definition, extraEagerNames) {
       var _this = this;
       if (!res) {
         return false;
       }
       var nodes = res.records.map(function (row) {
-        return _this.hydrateNode(row.get(alias), definition);
+        return _this.hydrateNode(row.get(alias), definition, extraEagerNames);
       });
       return new _Collection["default"](this._neode, nodes);
     }
@@ -91,7 +91,7 @@ var Factory = /*#__PURE__*/function () {
      */
   }, {
     key: "hydrateNode",
-    value: function hydrateNode(record, definition) {
+    value: function hydrateNode(record, definition, extraEagerNames) {
       var _this2 = this;
       // Is there no better way to check this?!
       if (_neo4jDriver["default"].isInt(record.identity) && Array.isArray(record.labels)) {
@@ -125,9 +125,21 @@ var Factory = /*#__PURE__*/function () {
 
       // Create Node Instance
       var node = new _Node["default"](this._neode, definition, identity, labels, properties);
+      // Create an array of all eagers and extra eagers
+      var eagers = definition.eager();
+      if (extraEagerNames) {
+        var relationships = definition.relationships();
+        relationships.forEach(function (relationship) {
+          if (extraEagerNames.includes(relationship.name()) && !eagers.some(function (x) {
+            return x.name() === relationship.name();
+          })) {
+            eagers.push(relationship);
+          }
+        });
+      }
 
       // Add eagerly loaded props
-      definition.eager().forEach(function (eager) {
+      eagers.forEach(function (eager) {
         var name = eager.name();
         if (!record[name]) {
           return;

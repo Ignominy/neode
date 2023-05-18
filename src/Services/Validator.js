@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import Joi from "@hapi/joi"
+import * as Joi from "joi"
 import neo4j from "neo4j-driver"
 import Model from "../Model"
 import Node from "../Node"
@@ -7,7 +7,7 @@ import RelationshipType, { DEFAULT_ALIAS } from "../RelationshipType"
 import ValidationError from "../ValidationError"
 
 const joi_options = {
-  allowUnknown: true,
+  allowUnknown: false,
   abortEarly: false,
 }
 
@@ -52,116 +52,196 @@ const booleans = [
 ]
 const booleanOrOptions = ["email", "ip", "uri", "base64", "normalize", "hex"]
 
-const temporal = Joi.extend({
-  base: Joi.object(),
-  name: "temporal",
-  language: {
-    before: "Value before minimum expected value",
-    after: "Value after minimum expected value",
+const temporalBase = Joi.object()
+
+const afterExtension = {
+  type: "temporal",
+  base: temporalBase,
+  messages: {
+    "temporal.after": "Value is before the minimum expected value",
   },
-  rules: [
-    {
-      name: "after",
-      params: {
-        after: Joi.alternatives([Joi.date(), Joi.string()]),
+  rules: {
+    after: {
+      method(after) {
+        return this.$_addRule({ name: "after", args: { after } })
       },
-      validate(params, value, state, options) {
-        if (params.after === "now") {
-          params.after = new Date()
+      args: [
+        {
+          name: "after",
+          assert: Joi.alternatives().try(Joi.date(), Joi.string()).required(),
+          message: "must be a date or a string",
+        },
+      ],
+      validate(value, helpers, { after }, options) {
+        if (after === "now") {
+          after = new Date()
         }
 
-        if (params.after > new Date(value.toString())) {
-          return this.createError("temporal.after", { v: value }, state, options)
-        }
-
-        return value
-      },
-    },
-    {
-      name: "before",
-      params: {
-        after: Joi.alternatives([Joi.date(), Joi.string()]),
-      },
-      validate(params, value, state, options) {
-        if (params.after === "now") {
-          params.after = new Date()
-        }
-
-        if (params.after < new Date(value.toString())) {
-          return this.createError("temporal.after", { v: value }, state, options)
+        if (after > new Date(value.toString())) {
+          return helpers.error("temporal.after")
         }
 
         return value
       },
     },
-  ],
-})
-
-// TODO: Ugly
-const neoInteger = Joi.extend({
-  // base: Joi.number(),
-  base: Joi.alternatives().try([Joi.number().integer(), Joi.object().type(neo4j.types.Integer)]),
-  name: "integer",
-  language: {
-    before: "Value before minimum expected value",
-    after: "Value after minimum expected value",
   },
-  rules: [
-    {
-      name: "min",
-      params: {
-        min: Joi.number(),
-      },
-      validate(params, value, state, options) {
-        const compare = value instanceof neo4j.types.Integer ? value.toNumber() : value
+}
 
-        if (params.min > compare) {
-          return this.createError("number.min", { limit: params.min }, state, options)
+const beforeExtension = {
+  type: "temporal",
+  base: temporalBase,
+  messages: {
+    "temporal.before": "Value is after the minimum expected value",
+  },
+  rules: {
+    before: {
+      method(before) {
+        return this.$_addRule({ name: "before", args: { before } })
+      },
+      args: [
+        {
+          name: "before",
+          assert: Joi.alternatives().try(Joi.date(), Joi.string()).required(),
+          message: "must be a date or a string",
+        },
+      ],
+      validate(value, helpers, { before }, options) {
+        if (before === "now") {
+          before = new Date()
+        }
+
+        if (before < new Date(value.toString())) {
+          return helpers.error("temporal.before")
         }
 
         return value
       },
     },
-    {
-      name: "max",
-      params: {
-        max: Joi.number(),
+  },
+}
+
+const temporal = Joi.extend(afterExtension, beforeExtension)
+
+const integerBase = Joi.custom((value, helpers) => {
+  if (typeof value === "number" || value instanceof neo4j.types.Integer) {
+    return value
+  }
+  return helpers.error("any.invalid")
+}, "Custom integer validation")
+
+const minExtension = {
+  type: "integer",
+  base: integerBase,
+  messages: {
+    "integer.min": "Value is less than the minimum expected value",
+  },
+  rules: {
+    min: {
+      method(min) {
+        return this.$_addRule({ name: "min", args: { min } })
       },
-      validate(params, value, state, options) {
+      args: [
+        {
+          name: "min",
+          assert: Joi.number().required(),
+          message: "must be a number",
+        },
+      ],
+      validate(value, helpers, { min }, options) {
         const compare = value instanceof neo4j.types.Integer ? value.toNumber() : value
-
-        if (params.max < compare) {
-          return this.createError("number.max", { limit: params.max }, state, options)
+        if (min > compare) {
+          return helpers.error("integer.min")
         }
-
         return value
       },
     },
-    {
-      name: "multiple",
-      params: {
-        multiple: Joi.number(),
+  },
+}
+
+const maxExtension = {
+  type: "integer",
+  base: integerBase,
+  messages: {
+    "integer.max": "Value is greater than the maximum expected value",
+  },
+  rules: {
+    max: {
+      method(max) {
+        return this.$_addRule({ name: "max", args: { max } })
       },
-      validate(params, value, state, options) {
+      args: [
+        {
+          name: "max",
+          assert: Joi.number().required(),
+          message: "must be a number",
+        },
+      ],
+      validate(value, helpers, { max }, options) {
         const compare = value instanceof neo4j.types.Integer ? value.toNumber() : value
-
-        if (compare % params.multiple != 0) {
-          return this.createError("number.multiple", { multiple: params.max }, state, options)
+        if (max < compare) {
+          return helpers.error("integer.max")
         }
-
         return value
       },
     },
-  ],
-})
+  },
+}
 
-const point = Joi.extend({
-  base: Joi.object().type(neo4j.types.Point),
-  name: "point",
-})
+const multipleExtension = {
+  type: "integer",
+  base: integerBase,
+  messages: {
+    "integer.multiple": "Value is not a multiple of the given number",
+  },
+  rules: {
+    multiple: {
+      method(multiple) {
+        return this.$_addRule({ name: "multiple", args: { multiple } })
+      },
+      args: [
+        {
+          name: "multiple",
+          assert: Joi.number().required(),
+          message: "must be a number",
+        },
+      ],
+      validate(value, helpers, { multiple }, options) {
+        const compare = value instanceof neo4j.types.Integer ? value.toNumber() : value
+        if (compare % multiple !== 0) {
+          return helpers.error("integer.multiple")
+        }
+        return value
+      },
+    },
+  },
+}
+
+const neoInteger = Joi.extend(minExtension, maxExtension, multipleExtension)
+
+const pointExtension = {
+  type: "point",
+  base: Joi.custom((value, helpers) => {
+    if (value instanceof neo4j.types.Point) {
+      return value
+    }
+    return helpers.message({ custom: "value is not an instance of neo4j.types.Point" })
+  }),
+}
+
+const point = Joi.extend(pointExtension)
 
 function nodeSchema() {
-  return Joi.alternatives([Joi.object().type(Node), Joi.string(), Joi.number(), Joi.object()])
+  return Joi.alternatives([
+    Joi.custom((value, helpers) => {
+      if (value instanceof Node) {
+        return value
+      }
+      return helpers.error("any.invalid")
+    }, "Custom Node validation"),
+    Joi.string(),
+    Joi.number(),
+    Joi.object(),
+  ])
 }
 
 function relationshipSchema(alias, properties = {}) {
@@ -171,7 +251,7 @@ function relationshipSchema(alias, properties = {}) {
   })
 }
 
-function BuildValidationSchema(schema) {
+function BuildValidationSchema(schema, allOptional) {
   if (schema instanceof Model || schema instanceof RelationshipType) {
     schema = schema.schema()
   }
@@ -211,33 +291,36 @@ function BuildValidationSchema(schema) {
         break
 
       case "string":
+        validation = Joi[config.type]().allow("")
+        break
+
       case "number":
       case "boolean":
         validation = Joi[config.type]()
         break
 
       case "datetime":
-        validation = temporal.temporal().type(neo4j.types.DateTime)
+        validation = temporal.temporal()
         break
 
       case "date":
-        validation = temporal.temporal().type(neo4j.types.Date)
+        validation = temporal.temporal()
         break
 
       case "time":
-        validation = temporal.temporal().type(neo4j.types.Time)
+        validation = temporal.temporal()
         break
 
       case "localdate":
-        validation = temporal.temporal().type(neo4j.types.LocalDate)
+        validation = temporal.temporal()
         break
 
       case "localtime":
-        validation = temporal.temporal().type(neo4j.types.LocalTime)
+        validation = temporal.temporal()
         break
 
       case "point":
-        validation = point.point().type(neo4j.types.Point)
+        validation = point.point()
         break
 
       case "int":
@@ -252,6 +335,10 @@ function BuildValidationSchema(schema) {
       default:
         validation = Joi.any()
         break
+    }
+
+    if (allOptional) {
+      validation = validation.optional()
     }
 
     if (!config.required) {
@@ -280,7 +367,7 @@ function BuildValidationSchema(schema) {
           validation = validation[validator]()
         }
       } else if (booleans.indexOf(validator) > -1) {
-        if (options === true) {
+        if (options === true && !(validator === "required" && allOptional)) {
           validation = validation[validator](options)
         }
       } else if (ignore.indexOf(validator) == -1 && validation[validator]) {
@@ -306,16 +393,15 @@ function BuildValidationSchema(schema) {
  * @param  {Object} properties
  * @return {Promise}
  */
-export default function Validator(neode, model, properties) {
-  const schema = BuildValidationSchema(model, properties)
+export default function Validator(neode, model, properties, allOptional = false) {
+  const schema = BuildValidationSchema(model, allOptional)
 
   return new Promise((resolve, reject) => {
-    Joi.validate(properties, schema, joi_options, (err, validated) => {
-      if (err) {
-        return reject(new ValidationError(err.details, properties, err))
-      }
-
+    try {
+      const validated = Joi.object(schema).validateAsync(properties, joi_options)
       return resolve(validated)
-    })
+    } catch (err) {
+      return reject(new ValidationError(err.details, properties, err))
+    }
   })
 }

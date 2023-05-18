@@ -8,11 +8,14 @@ var _fs = _interopRequireDefault(require("fs"));
 var _neo4jDriver = _interopRequireDefault(require("neo4j-driver"));
 var _path = _interopRequireDefault(require("path"));
 var _Collection = _interopRequireDefault(require("./Collection"));
+var _Entity = require("./Entity");
 var _Factory = _interopRequireDefault(require("./Factory"));
 var _Model = _interopRequireDefault(require("./Model"));
 var _ModelMap = _interopRequireDefault(require("./ModelMap"));
 var _Builder = _interopRequireDefault(require("./Query/Builder"));
 var _Schema = _interopRequireDefault(require("./Schema"));
+var _DeleteByProperties = _interopRequireDefault(require("./Services/DeleteByProperties"));
+var _RelateByProperties = _interopRequireDefault(require("./Services/RelateByProperties"));
 var _TransactionError = _interopRequireDefault(require("./TransactionError"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -246,6 +249,41 @@ var Neode = /*#__PURE__*/function () {
     value: function relate(from, to, type, properties) {
       var force_create = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
       return from.relateTo(to, type, properties, force_create);
+    }
+
+    /**
+     * Relate two nodes based on the type and properties
+     *
+     * @param  {Model}  fromModel               Origin model
+     * @param  {Object} fromProperties          Origin properties
+     * @param  {String} type                    Type of Relationship definition
+     * @param  {Model}  toModel                 Target model
+     * @param  {Object} toProperties            Target properties
+     * @param  {Object} reltionshipProperties   Relationship properties
+     * @param  {String} customerId              Customer id
+     * @return {Promise}
+     */
+  }, {
+    key: "relateByProperties",
+    value: function relateByProperties(fromModel, fromProperties, type, toModel, toProperties, reltionshipProperties, customerId) {
+      return (0, _RelateByProperties["default"])(this, fromModel, fromProperties, type, toModel, toProperties, reltionshipProperties, customerId);
+    }
+
+    /**
+     * Delete relationship between nodes found by properties
+     *
+     * @param  {Model}  fromModel               Origin model
+     * @param  {Object} fromProperties          Origin properties
+     * @param  {String} type                    Type of Relationship definition
+     * @param  {Model}  toModel                 Target model
+     * @param  {Object} toProperties            Target properties
+     * @param  {String} customerId              Customer id
+     * @return {Promise}
+     */
+  }, {
+    key: "deleteRelationshipByProperties",
+    value: function deleteRelationshipByProperties(fromModel, fromProperties, type, toModel, toProperties, customerId) {
+      return (0, _DeleteByProperties["default"])(this, fromModel, fromProperties, type, toModel, toProperties, customerId);
     }
 
     /**
@@ -491,15 +529,14 @@ var Neode = /*#__PURE__*/function () {
      * Find a Node by properties
      *
      * @param  {String} label
-     * @param  {mixed}  key     Either a string for the property name or an object of values
-     * @param  {mixed}  value   Value
+     * @param  {Object}  key     Object of values
      * @param  {String|null} customerId
      * @return {Promise}
      */
   }, {
     key: "first",
-    value: function first(label, key, value, customerId) {
-      return this.models.get(label).first(key, value, customerId);
+    value: function first(label, properties, customerId) {
+      return this.models.get(label).first(properties, customerId);
     }
 
     /**
@@ -512,8 +549,8 @@ var Neode = /*#__PURE__*/function () {
      */
   }, {
     key: "hydrate",
-    value: function hydrate(res, alias, definition) {
-      return this.factory.hydrate(res, alias, definition);
+    value: function hydrate(res, alias, definition, extraEagerNames) {
+      return this.factory.hydrate(res, alias, definition, extraEagerNames);
     }
 
     /**
@@ -525,8 +562,8 @@ var Neode = /*#__PURE__*/function () {
      */
   }, {
     key: "hydrateFirst",
-    value: function hydrateFirst(res, alias, definition) {
-      return this.factory.hydrateFirst(res, alias, definition);
+    value: function hydrateFirst(res, alias, definition, extraEagerNames) {
+      return this.factory.hydrateFirst(res, alias, definition, extraEagerNames);
     }
 
     /**
@@ -580,6 +617,29 @@ var Neode = /*#__PURE__*/function () {
         }
       });
       return new Neode(connection_string, username, password, enterprise, database, config);
+    }
+  }, {
+    key: "getCustomerIdLabel",
+    value: function getCustomerIdLabel(customerId) {
+      return "cid_".concat(customerId.replace(/-/g, "_"));
+    }
+  }, {
+    key: "propertiesToCypher",
+    value: function propertiesToCypher(model, properties) {
+      var resObj = {};
+      model.properties().forEach(function (property) {
+        var name = property.name();
+
+        // Skip if not set
+        if (!properties.hasOwnProperty(name)) {
+          return;
+        }
+        var value = (0, _Entity.valueToCypher)(property, properties[name]);
+        if (value !== undefined) {
+          resObj[name] = value;
+        }
+      });
+      return resObj;
     }
   }]);
   return Neode;

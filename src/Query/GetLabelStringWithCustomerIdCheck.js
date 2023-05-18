@@ -1,8 +1,5 @@
 import Model from "../Model"
-
-export const getCustomerIdLabel = customerId => {
-  return `cid_${customerId.replace(/-/g, "_")}`
-}
+import Neode from "../index"
 
 export const getLabelStringWithCustomerIdCheck = (model, customerId) => {
   if (model instanceof Model) {
@@ -11,7 +8,7 @@ export const getLabelStringWithCustomerIdCheck = (model, customerId) => {
     if (labels.length === 0 || !labels.every(label => label.startsWith("__"))) {
       if (!customerId) throw new Error("customerId is required for this model")
 
-      labels.push(getCustomerIdLabel(customerId))
+      labels.push(Neode.getCustomerIdLabel(customerId))
     }
 
     return `:${labels.join(":")}`
@@ -19,7 +16,7 @@ export const getLabelStringWithCustomerIdCheck = (model, customerId) => {
     if (!model.startsWith("__")) {
       if (!customerId) throw new Error("customerId is required for this model")
 
-      return `:${model}:${getCustomerIdLabel(customerId)}`
+      return `:${model}:${Neode.getCustomerIdLabel(customerId)}`
     }
 
     return `:${model}`

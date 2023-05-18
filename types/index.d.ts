@@ -25,6 +25,21 @@ declare class Neode {
   static fromEnv(): Neode
 
   /**
+   * Get customer id label
+   *
+   * @param {String} customerId
+   */
+  static getCustomerIdLabel(customerId: string): string
+
+  /**
+   * Convert a properties into a cypher properties
+   *
+   * @param {Object} properties
+   * @return {Object}
+   */
+  static propertiesToCypher<T>(model: Neode.Model<T>, properties: Partial<T>): object
+
+  /**
    * Define multiple models
    *
    * @param  {Object} models   Map of models with their schema.  ie {Movie: {...}}
@@ -128,7 +143,55 @@ declare class Neode {
    * @param  {Boolean} force_create   Force the creation a new relationship? If false, the relationship will be merged
    * @return {Promise}
    */
-  relate<T, U>(from: Neode.Node<T>, to: Neode.Node<U>, type: string, properties: Neode.RelationshipSchema, force_create?: boolean): Promise<Neode.Relationship>
+  relate<T, U>(
+    from: Neode.Node<T>,
+    to: Neode.Node<U>,
+    type: string,
+    properties: Neode.RelationshipSchema,
+    force_create?: boolean,
+  ): Promise<Neode.Relationship<any, T, U> | undefined>
+
+  /**
+   * Relate two nodes based on the type and properties
+   *
+   * @param  {Model}  fromModel               Origin model
+   * @param  {Object} fromProperties          Origin properties
+   * @param  {String} type                    Type of Relationship definition
+   * @param  {Model}  toModel                 Target model
+   * @param  {Object} toProperties            Target properties
+   * @param  {Object} reltionshipProperties   Relationship properties
+   * @param  {String} customerId              Customer id
+   * @return {Promise}
+   */
+  relateByProperties<T, U, V>(
+    fromModel: Neode.Model<T>,
+    fromProperties: Partial<T>,
+    type: string,
+    toModel: Neode.Model<U>,
+    toProperties: Partial<U>,
+    reltionshipProperties: V,
+    customerId?: string,
+  ): Promise<Neode.Relationship<V, T, U> | undefined>
+
+  /**
+   * Delete relationship between nodes found by properties
+   *
+   * @param  {Model}  fromModel               Origin model
+   * @param  {Object} fromProperties          Origin properties
+   * @param  {String} type                    Type of Relationship definition
+   * @param  {Model}  toModel                 Target model
+   * @param  {Object} toProperties            Target properties
+   * @param  {String} customerId              Customer id
+   * @return {Promise}
+   */
+  deleteRelationshipByProperties<T, U, V>(
+    fromModel: Neode.Model<T>,
+    fromProperties: Partial<T>,
+    type: string,
+    toModel: Neode.Model<U>,
+    toProperties: Partial<U>,
+    customerId?: string,
+  ): Promise<void>
 
   /**
    * Run an explicitly defined Read query
@@ -223,14 +286,14 @@ declare class Neode {
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  all(
+  all<T>(
     label: string,
-    properties?: object,
+    properties?: Partial<T>,
     order?: string | Array<any> | object,
     limit?: number,
     skip?: number,
     customerId?: string,
-  ): Promise<Neode.NodeCollection>
+  ): Promise<Neode.NodeCollection<T>>
 
   /**
    * Find a Node by it's label and primary key
@@ -240,7 +303,7 @@ declare class Neode {
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  find<T>(label: string, id: string | number, customerId?: string): Promise<Neode.Node<T>>
+  find<T>(label: string, id: string | number, customerId?: string): Promise<Neode.Node<T> | undefined>
 
   /**
    * Find a Node by it's internal node ID
@@ -250,7 +313,7 @@ declare class Neode {
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  findById<T>(label: string, id: number, customerId?: string): Promise<Neode.Node<T>>
+  findById<T>(label: string, id: number, customerId?: string): Promise<Neode.Node<T> | undefined>
 
   /**
    * Find a Node by properties
@@ -261,7 +324,7 @@ declare class Neode {
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  first<T>(label: string, key: string | { [key: string]: any }, value: any, customerId?: string): Promise<Neode.Node<T>>
+  first<T>(label: string, key: string | Partial<T>, value: any, customerId?: string): Promise<Neode.Node<T> | undefined>
 
   /**
    * Hydrate a set of nodes and return a NodeCollection
@@ -269,18 +332,20 @@ declare class Neode {
    * @param  {Object}          res            Neo4j result set
    * @param  {String}          alias          Alias of node to pluck
    * @param  {Definition|null} definition     Force Definition
+   * @param  {String[]|null} extraEagerNames
    * @return {NodeCollection}
    */
-  hydrate<T>(res: QueryResult, alias: string, definition?: Neode.Model<T>): Neode.NodeCollection
+  hydrate<T>(res: QueryResult, alias: string, definition?: Neode.Model<T>, extraEagerNames: Array<keyof T>): Neode.NodeCollection<T>
 
   /**
    * Hydrate the first record in a result set
    *
    * @param  {Object} res    Neo4j Result
    * @param  {String} alias  Alias of Node to pluck
+   * @param  {String[]|null} extraEagerNames
    * @return {Node}
    */
-  hydrateFirst<T>(res: QueryResult, alias: string, definition?: Neode.Model<T>): Neode.Node<T>
+  hydrateFirst<T>(res: QueryResult, alias: string, definition?: Neode.Model<T>, extraEagerNames: Array<keyof T>): Neode.Node<T> | undefined
 }
 
 export = Neode
@@ -653,29 +718,43 @@ declare namespace Neode {
      * Create a new node
      *
      * @param  {object} properties
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    create(properties: T, customerId?: string): Promise<Node<T>>
+    create(properties: T, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T>>
 
     /**
      * Merge a node based on the defined indexes
      *
      * @param  {Object} properties
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    merge(properties: T, customerId?: string): Promise<Node<T>>
+    merge(properties: T, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T>>
 
     /**
      * Merge a node based on the supplied properties
      *
      * @param  {Object} match Specific properties to merge on
      * @param  {Object} set   Properties to set
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    mergeOn(match: Object, set: Object, customerId?: string): Promise<Node<T>>
+    mergeOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T>>
+
+    /**
+     * Update a node based on the supplied properties
+     *
+     * @param  {Object} match Specific properties to match on
+     * @param  {Object} set   Properties to set
+     * @param  {String[]|null} extraEagerNames
+     * @param  {String|null} customerId
+     * @return {Promise}
+     */
+    updateOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
 
     /**
      * Delete all nodes for this model
@@ -688,42 +767,52 @@ declare namespace Neode {
      * Get a collection of nodes for this label
      *
      * @param  {Object}              properties
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|Array|Object} order
      * @param  {Int}                 limit
      * @param  {Int}                 skip
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    all(properties?: object, order?: string | Array<any> | object, limit?: number, skip?: number, customerId?: string): Promise<NodeCollection>
+    all(
+      properties?: Partial<T>,
+      extraEagerNames?: Array<keyof T>,
+      order?: string | Array<any> | object,
+      limit?: number,
+      skip?: number,
+      customerId?: string,
+    ): Promise<NodeCollection<T>>
 
     /**
      * Find a Node by its Primary Key
      *
      * @param  {mixed} id
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    find(id: string | number, customerId?: string): Promise<Node<T>>
+    find(id: string | number, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
 
     /**
      * Find a Node by it's internal node ID
      *
      * @param  {int}    id
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    findById(id: number, customerId?: string): Promise<Node<T>>
+    findById(id: number, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
 
     /**
      * Find a Node by properties
      *
      * @param  {String} label
-     * @param  {mixed}  key     Either a string for the property name or an object of values
-     * @param  {mixed}  value   Value
+     * @param  {Object}  properties
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    first(key: string | object, value: string | number, customerId?: string): Promise<Node<T>>
+    first(properties: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
 
     /**
      * Get a collection of nodes within a certain distance belonging to this label
@@ -732,6 +821,7 @@ declare namespace Neode {
      * @param  {String}              location_property
      * @param  {Object}              point
      * @param  {Int}                 distance
+     * @param  {String[]|null}        extraEagerNames
      * @param  {String|Array|Object} order
      * @param  {Int}                 limit
      * @param  {Int}                 skip
@@ -742,12 +832,13 @@ declare namespace Neode {
       location_property: string,
       point: { x: number; y: number; z?: number } | { latitude: number; longitude: number; height?: number },
       distance: number,
-      properties?: object,
+      properties?: Partial<T>,
+      extraEagerNames?: Array<keyof T>,
       order?: string | Array<any> | object,
       limit?: number,
       skip?: number,
       customerId?: string,
-    ): Promise<NodeCollection>
+    ): Promise<NodeCollection<T>>
   }
 
   class Model<T> extends Queryable<T> {
@@ -811,16 +902,16 @@ declare namespace Neode {
      * @param  {Bool|String} cascade        Cascade delete policy for this relationship
      * @return {Relationship}
      */
-    relationship(
+    relationship<U>(
       name: string,
       type: string,
       relationship: string,
       direction?: Neode.Direction,
-      target?: string | Model<T>,
+      target?: string | Model<U>,
       schema?: Neode.SchemaObject,
       eager?: boolean,
       cascade?: boolean | string,
-    ): Relationship
+    ): Relationship<object, T, U>
 
     /**
      * Get all defined Relationships  for this Model
@@ -834,7 +925,7 @@ declare namespace Neode {
      *
      * @return {Array}
      */
-    eager(): Array<Relationship>
+    eager(): Array<Relationship<object, Node<any>, Node<any>>>
 
     /**
      * Get the name of the primary key
@@ -950,7 +1041,7 @@ declare namespace Neode {
     cascade(): string
   }
 
-  class Relationship {
+  class Relationship<PROP, FROM, TO> {
     /**
      * Constructor
      *
@@ -961,7 +1052,7 @@ declare namespace Neode {
      * @param  {Node}             to            End node for the relationship
      * @return {Relationship}
      */
-    constructor(neode: Neode, type: RelationshipType, relationship: Relationship, from: Node<any>, to: Node<any>)
+    constructor(neode: Neode, type: RelationshipType, relationship: Relationship<PROP, FROM, TO>, from: Node<FROM>, to: Node<TO>)
 
     /**
      * Relationship Type definition for this node
@@ -989,7 +1080,7 @@ declare namespace Neode {
      *
      * @return {Object}
      */
-    properties(): object
+    properties(): PROP
 
     /**
      * Get a property for this relationship
@@ -998,21 +1089,21 @@ declare namespace Neode {
      * @param  {or}     default  Default value to supply if none exists
      * @return {mixed}
      */
-    get<T>(property: string, or?: T): T
+    get<T>(property: keyof PROP, or?: T): T
 
     /**
      * Get originating node for this relationship
      *
      * @return Node
      */
-    startNode(): Node<any>
+    startNode(): Node<FROM>
 
     /**
      * Get destination node for this relationship
      *
      * @return Node
      */
-    endNode(): Node<any>
+    endNode(): Node<TO>
 
     /**
      * Convert Relationship to Object
@@ -1032,7 +1123,7 @@ declare namespace Neode {
      * @param  {Map}   eager  Eagerly loaded values
      * @return {Node}
      */
-    constructor(neode: Neode, model: Model<T>, node: Neo4jNode, eager?: Map<string, NodeCollection>)
+    constructor(neode: Neode, model: Model<T>, node: Neo4jNode, eager?: Map<string, NodeCollection<any>>)
 
     /**
      * Model definition for this node
@@ -1062,7 +1153,7 @@ declare namespace Neode {
      * @param  {or}     default  Default value to supply if none exists
      * @return {mixed}
      */
-    get<U>(property: string, or?: U): U
+    get<U>(property: keyof T, or?: U): U
 
     /**
      * Get all properties for this node
@@ -1102,7 +1193,7 @@ declare namespace Neode {
      * @param  {Boolean} force_create   Force the creation a new relationship? If false, the relationship will be merged
      * @return {Promise}
      */
-    relateTo(node: Node<any>, type: string, properties?: object, force_create?: boolean): Promise<Relationship>
+    relateTo<U>(node: Node<U>, type: string, properties?: object, force_create?: boolean): Promise<Relationship<object, T, U>>
 
     /**
      * When converting to string, return this model's primary key
@@ -1119,7 +1210,7 @@ declare namespace Neode {
     toJson(): Promise<T>
   }
 
-  class NodeCollection {
+  class NodeCollection<N> {
     /**
      * @constructor
      * @param  {Neode} neode    Neode Instance
@@ -1146,14 +1237,14 @@ declare namespace Neode {
      * @param  {Int} index
      * @return {Node}
      */
-    get(index: number): Node<any>
+    get(index: number): Node<N>
 
     /**
      * Get the first Node in the Collection
      *
      * @return {Node}
      */
-    first(): Node<any>
+    first(): Node<N>
 
     /**
      * Map a function to all values
@@ -1161,7 +1252,7 @@ declare namespace Neode {
      * @param  {Function} fn
      * @return {mixed}
      */
-    map<U>(fn: (value: Node<any>, index: number, array: Array<Node<any>>) => U): Array<U>
+    map<U>(fn: (value: Node<N>, index: number, array: Array<Node<N>>) => U): Array<U>
 
     /**
      * Find node with function
@@ -1169,14 +1260,14 @@ declare namespace Neode {
      * @param  {Function} fn
      * @return {mixed}
      */
-    find<U>(fn: (value: Node<any>, index: number, array: Array<Node<any>>) => U): Node<U>
+    find<U>(fn: (value: Node<N>, index: number, array: Array<Node<N>>) => U): Node<U>
 
     /**
      * Run a function on all values
      * @param  {Function} fn
      * @return {mixed}
      */
-    forEach(fn: (value: Node<any>, index: number, array: Array<Node<any>>) => any): any
+    forEach(fn: (value: Node<N>, index: number, array: Array<Node<N>>) => N): N
 
     /**
      * Map the 'toJson' function on all values
@@ -1187,6 +1278,6 @@ declare namespace Neode {
   }
 }
 
-export interface RelationshipNode {
-  node: string | number | object
+export interface RelationshipNode<T> {
+  node: string | number | Partial<T> | T
 }

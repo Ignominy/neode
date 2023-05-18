@@ -12,6 +12,7 @@ var _FindById = _interopRequireDefault(require("./Services/FindById"));
 var _FindWithinDistance = _interopRequireDefault(require("./Services/FindWithinDistance"));
 var _First = _interopRequireDefault(require("./Services/First"));
 var _MergeOn = _interopRequireDefault(require("./Services/MergeOn"));
+var _Update = _interopRequireDefault(require("./Services/Update"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
@@ -49,26 +50,28 @@ var Queryable = /*#__PURE__*/function () {
      *
      * @param  {object} properties
      * @param  {String|null} customerId
+     * @param  {String[]|null} extraEagerNames
      * @return {Promise}
      */
   }, {
     key: "create",
-    value: function create(properties, customerId) {
-      return (0, _Create["default"])(this._neode, this, properties, customerId);
+    value: function create(properties, extraEagerNames, customerId) {
+      return (0, _Create["default"])(this._neode, this, properties, extraEagerNames, customerId);
     }
 
     /**
      * Merge a node based on the defined indexes
      *
      * @param  {Object} properties
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
   }, {
     key: "merge",
-    value: function merge(properties, customerId) {
+    value: function merge(properties, extraEagerNames, customerId) {
       var merge_on = this.mergeFields();
-      return (0, _MergeOn["default"])(this._neode, this, merge_on, properties, customerId);
+      return (0, _MergeOn["default"])(this._neode, this, merge_on, properties, extraEagerNames, customerId);
     }
 
     /**
@@ -88,6 +91,28 @@ var Queryable = /*#__PURE__*/function () {
     }
 
     /**
+     * Update a node based on the supplied properties
+     *
+     * @param  {Object} match Specific properties to match on
+     * @param  {Object} set   Properties to set
+     * @param  {String[]|null} extraEagerNames Extra eagers to load with this query
+     * @param  {String|null} customerId
+     * @return {Promise}
+     */
+  }, {
+    key: "updateOn",
+    value: function updateOn(match, set, extraEagerNames, customerId) {
+      var merge_on = Object.keys(match).filter(function (key) {
+        return match[key] !== undefined;
+      });
+      Object.keys(set).forEach(function (key) {
+        return set[key] === undefined && delete set[key];
+      });
+      var properties = _objectSpread(_objectSpread({}, match), set);
+      return (0, _Update["default"])(this._neode, this, merge_on, properties, extraEagerNames, customerId);
+    }
+
+    /**
      * Delete all nodes for this model
      *
      * @return {Promise}
@@ -102,6 +127,7 @@ var Queryable = /*#__PURE__*/function () {
      * Get a collection of nodes for this label
      *
      * @param  {Object}              properties
+     * @param  {String[]|Null}    extraEagerNames
      * @param  {String|Array|Object} order
      * @param  {Int}                 limit
      * @param  {Int}                 skip
@@ -110,8 +136,8 @@ var Queryable = /*#__PURE__*/function () {
      */
   }, {
     key: "all",
-    value: function all(properties, order, limit, skip, customerId) {
-      return (0, _FindAll["default"])(this._neode, this, properties, order, limit, skip, customerId);
+    value: function all(properties, extraEagerNames, order, limit, skip, customerId) {
+      return (0, _FindAll["default"])(this._neode, this, properties, extraEagerNames, order, limit, skip, customerId);
     }
 
     /**
@@ -125,7 +151,7 @@ var Queryable = /*#__PURE__*/function () {
     key: "find",
     value: function find(id, customerId) {
       var primary_key = this.primaryKey();
-      return this.first(primary_key, id, customerId);
+      return this.first(_defineProperty({}, primary_key, id), customerId);
     }
 
     /**
@@ -133,34 +159,35 @@ var Queryable = /*#__PURE__*/function () {
      *
      * @param  {String} model
      * @param  {int}    id
+     * @param  {String[]|Null}    extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
   }, {
     key: "findById",
-    value: function findById(id, customerId) {
-      return (0, _FindById["default"])(this._neode, this, id, customerId);
+    value: function findById(id, extraEagerNames, customerId) {
+      return (0, _FindById["default"])(this._neode, this, id, extraEagerNames, customerId);
     }
 
     /**
      * Find a Node by properties
      *
-     * @param  {String} label
-     * @param  {mixed}  key     Either a string for the property name or an object of values
-     * @param  {mixed}  value   Value
+     * @param  {Object} properties
+     * @param  {String[]|null} extraEagerNames
      * @param  {String|null} customerId
      * @return {Promise}
      */
   }, {
     key: "first",
-    value: function first(key, value, customerId) {
-      return (0, _First["default"])(this._neode, this, key, value, customerId);
+    value: function first(properties, extraEagerNames, customerId) {
+      return (0, _First["default"])(this._neode, this, properties, extraEagerNames, customerId);
     }
 
     /**
      * Get a collection of nodes within a certain distance belonging to this label
      *
      * @param  {Object}              properties
+     * @param  {String[]|null}       extraEagerNames
      * @param  {String}              location_property
      * @param  {Object}              point
      * @param  {Int}                 distance
@@ -172,8 +199,8 @@ var Queryable = /*#__PURE__*/function () {
      */
   }, {
     key: "withinDistance",
-    value: function withinDistance(location_property, point, distance, properties, order, limit, skip, customerId) {
-      return (0, _FindWithinDistance["default"])(this._neode, this, location_property, point, distance, properties, order, limit, skip, customerId);
+    value: function withinDistance(location_property, point, distance, properties, extraEagerNames, order, limit, skip, customerId) {
+      return (0, _FindWithinDistance["default"])(this._neode, this, location_property, point, distance, properties, extraEagerNames, order, limit, skip, customerId);
     }
   }]);
   return Queryable;
