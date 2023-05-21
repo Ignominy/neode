@@ -14,12 +14,9 @@ export default function Update(neode, model, merge_on, properties, extraEagerNam
     // Output
     const output = eagerNode(neode, 1, alias, model, extraEagerNames, customerId)
 
-    console.log(builder.build())
-
     return builder
       .return(output)
-      .limit(1)
       .execute(mode.WRITE)
-      .then(res => neode.hydrateFirst(res, alias, model, extraEagerNames))
+      .then(res => neode.hydrate(res, alias, model, extraEagerNames))
   })
 }

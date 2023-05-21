@@ -149,32 +149,39 @@ export function addReadRelationshipToStatement(neode, builder, alias, rel_alias,
 
   delete value[node_alias]
 
-  builder.match(alias).relationship(relationship.relationship(), relationship.direction(), rel_alias)
-
   // If Node is passed, attempt to match a relationship to that specific node
   if (node_value instanceof Node) {
-    builder.to(target_alias, undefined, customerId).whereId(target_alias, node_value.identity())
+    builder
+      .match(alias)
+      .relationship(relationship.relationship(), relationship.direction(), rel_alias)
+      .to(target_alias, undefined, customerId)
+      .whereId(target_alias, node_value.identity())
   }
 
   // If Primary key is passed then try to match on that
   else if (typeof node_value === "string" || typeof node_value === "number") {
     const model = neode.model(relationship.target())
 
-    builder.to(
-      target_alias,
-      model,
-      {
-        [model.primaryKey()]: node_value,
-      },
-      customerId,
-    )
+    builder
+      .match(alias)
+      .relationship(relationship.relationship(), relationship.direction(), rel_alias)
+      .to(
+        target_alias,
+        model,
+        {
+          [model.primaryKey()]: node_value,
+        },
+        customerId,
+      )
   }
 
   // If Map is passed, attempt to match that node
   else if (Object.keys(node_value).length) {
     const model = neode.model(relationship.target())
 
-    builder.to(target_alias, model, node_value, customerId)
+    addReadNodeToStatement(neode, builder, target_alias, model, node_value, undefined, aliases, customerId)
+
+    builder.match(alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias)
   }
 }
 
@@ -193,24 +200,25 @@ export function addReadRelationshipToStatement(neode, builder, alias, rel_alias,
  * @param {String|null}     customerId      Customer ID
  */
 export function addReadNodeRelationshipToStatement(neode, builder, alias, rel_alias, target_alias, relationship, value, aliases, mode, customerId) {
-  builder.match(alias).relationship(relationship.relationship(), relationship.direction(), rel_alias)
-
   // If Node is passed, attempt to match a relationship to that specific node
   if (value instanceof Node) {
-    builder.to(target_alias).whereId(target_alias, value.identity())
+    builder.match(alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias).whereId(target_alias, value.identity())
   }
   // If Primary key is passed then try to match on that
   else if (typeof value === "string" || typeof value === "number") {
     const model = neode.model(relationship.target())
 
-    builder.to(
-      target_alias,
-      model,
-      {
-        [model.primaryKey()]: value,
-      },
-      customerId,
-    )
+    builder
+      .match(alias)
+      .relationship(relationship.relationship(), relationship.direction(), rel_alias)
+      .to(
+        target_alias,
+        model,
+        {
+          [model.primaryKey()]: value,
+        },
+        customerId,
+      )
   }
   // If Map is passed, attempt to match that node
   // TODO: What happens when we need to validate this?
@@ -218,6 +226,8 @@ export function addReadNodeRelationshipToStatement(neode, builder, alias, rel_al
   else if (Object.keys(value).length) {
     const model = neode.model(relationship.target())
 
-    builder.to(target_alias, model, value, customerId)
+    addReadNodeToStatement(neode, builder, target_alias, model, value, undefined, aliases, customerId)
+
+    builder.match(alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(target_alias)
   }
 }

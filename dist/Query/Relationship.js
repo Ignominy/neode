@@ -32,7 +32,7 @@ var Relationship = /*#__PURE__*/function () {
       if (relationship != "") {
         relationship = ":`".concat(relationship, "`");
       }
-      var traversals = this._traversals ? "*".concat(this._traversals) : "";
+      var traversals = this._traversals ? this._traversals !== "*" ? "*".concat(this._traversals) : "*" : "";
       var rel = this._relationship || this._alias || this._traversals ? "[".concat(alias).concat(relationship).concat(traversals, "]") : "";
       return "".concat(dir_in, "-").concat(rel, "-").concat(dir_out);
     }

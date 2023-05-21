@@ -1,4 +1,4 @@
-import { DIRECTION_IN, DIRECTION_OUT, ALT_DIRECTION_IN, ALT_DIRECTION_OUT } from "../RelationshipType"
+import { ALT_DIRECTION_IN, ALT_DIRECTION_OUT, DIRECTION_IN, DIRECTION_OUT } from "../RelationshipType"
 
 export default class Relationship {
   constructor(relationship, direction, alias, traversals) {
@@ -23,7 +23,7 @@ export default class Relationship {
       relationship = `:\`${relationship}\``
     }
 
-    const traversals = this._traversals ? `*${this._traversals}` : ""
+    const traversals = this._traversals ? (this._traversals !== "*" ? `*${this._traversals}` : "*") : ""
 
     const rel = this._relationship || this._alias || this._traversals ? `[${alias}${relationship}${traversals}]` : ""
 

@@ -13,9 +13,11 @@ import Model from "./Model"
 import ModelMap from "./ModelMap"
 import Builder from "./Query/Builder"
 import Schema from "./Schema"
-import DeleteByProperties from "./Services/DeleteByProperties"
+import DeleteRelationshipByProperties from "./Services/DeleteRelationshipByProperties"
 import RelateByProperties from "./Services/RelateByProperties"
 import TransactionError from "./TransactionError"
+
+export { Builder }
 
 export default class Neode {
   /**
@@ -96,6 +98,12 @@ export default class Neode {
 
   static getCustomerIdLabel(customerId) {
     return `cid_${customerId.replace(/-/g, "_")}`
+  }
+
+  static getCustomerIdFromNodeLabels(node) {
+    const labels = node.labels()
+    const label = labels.find(label => label.startsWith("cid_"))
+    return label ? label.replace("cid_", "").replace(/_/g, "-") : null
   }
 
   static propertiesToCypher(model, properties) {
@@ -321,7 +329,7 @@ export default class Neode {
    * @return {Promise}
    */
   deleteRelationshipByProperties(fromModel, fromProperties, type, toModel, toProperties, customerId) {
-    return DeleteByProperties(this, fromModel, fromProperties, type, toModel, toProperties, customerId)
+    return DeleteRelationshipByProperties(this, fromModel, fromProperties, type, toModel, toProperties, customerId)
   }
 
   /**
@@ -585,5 +593,3 @@ export default class Neode {
     return new Collection(this, array)
   }
 }
-
-module.exports = Neode

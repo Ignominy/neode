@@ -250,13 +250,7 @@ function addRelationshipToStatement(neode, builder, alias, rel_alias, target_ali
     if (!_model) {
       throw new Error("Couldn't find a target model for ".concat(relationship.target(), " in ").concat(relationship.name(), ".  Did you use module.exports?"));
     }
-    if (mode === "update") {
-      console.log(node_value);
-      (0, _ReadUtils.addReadNodeToStatement)(neode, builder, target_alias, _model, node_value, undefined, aliases, customerId);
-    } else {
-      node_value = _GenerateDefaultValues["default"].async(neode, _model, node_value);
-      addNodeToStatement(neode, builder, target_alias, _model, node_value, aliases, mode, _model.mergeFields(), customerId);
-    }
+    (0, _ReadUtils.addReadNodeToStatement)(neode, builder, target_alias, _model, node_value, undefined, aliases, customerId);
   }
 
   // Create the Relationship

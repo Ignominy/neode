@@ -1,6 +1,7 @@
 import Builder from "./Query/Builder"
 import Create from "./Services/Create"
 import DeleteAll from "./Services/DeleteAll"
+import DeleteByProperties from "./Services/DeleteByProperties"
 import FindAll from "./Services/FindAll"
 import FindById from "./Services/FindById"
 import FindWithinDistance from "./Services/FindWithinDistance"
@@ -93,6 +94,15 @@ export default class Queryable {
    */
   deleteAll() {
     return DeleteAll(this._neode, this)
+  }
+
+  /**
+   * Delete nodes by properties
+   *
+   * @return {Promise}
+   */
+  deleteByProperties(properties, customerId) {
+    return DeleteByProperties(this._neode, this, properties, customerId)
   }
 
   /**

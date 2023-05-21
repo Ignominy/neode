@@ -32,6 +32,13 @@ declare class Neode {
   static getCustomerIdLabel(customerId: string): string
 
   /**
+   * Get customer id from node
+   *
+   * @param {Neode.Node} customerId
+   */
+  static getCustomerIdFromNodeLabels(node: Neode.Node): string | undefined
+
+  /**
    * Convert a properties into a cypher properties
    *
    * @param {Object} properties
@@ -166,7 +173,7 @@ declare class Neode {
   relateByProperties<T, U, V>(
     fromModel: Neode.Model<T>,
     fromProperties: Partial<T>,
-    type: string,
+    type: keyof T,
     toModel: Neode.Model<U>,
     toProperties: Partial<U>,
     reltionshipProperties: V,
@@ -187,11 +194,11 @@ declare class Neode {
   deleteRelationshipByProperties<T, U, V>(
     fromModel: Neode.Model<T>,
     fromProperties: Partial<T>,
-    type: string,
+    type: keyof T,
     toModel: Neode.Model<U>,
     toProperties: Partial<U>,
     customerId?: string,
-  ): Promise<void>
+  ): Promise<number>
 
   /**
    * Run an explicitly defined Read query
@@ -569,12 +576,13 @@ declare namespace Neode {
      *
      * @param  {String} alias      Alias in query
      * @param  {Model}  model      Model definition
+     * @param  {Object} properties Properties to match
      * @param  {String|null} customerId
      * @return {Builder}           Builder
      */
-    match<T>(alias: string, model: Model<T>, customerId?: string): Builder
+    match<T>(alias: string, model?: Model<T>, properties?: { [key: keyof T]: any }, customerId?: string): Builder
 
-    optionalMatch<T>(alias: string, model: Model<T>, customerId?: string): Builder
+    optionalMatch<T>(alias: string, model?: Model<T>, properties?: { [key: keyof T]: any }, customerId?: string): Builder
 
     /**
      * Add a 'with' statement to the query
@@ -594,10 +602,18 @@ declare namespace Neode {
     /**
      * Add a where condition to the current statement.
      *
-     * @param  {...mixed} args Argumenta
+     * @param  {...String} args Argumenta
      * @return {Builder}
      */
     where(...args: Array<string>): Builder
+
+    /**
+     * Add a unwind statement to the current statement.
+     *
+     * @param  {...String} args Argumenta
+     * @return {Builder}
+     */
+    unwind(...args: Array<string>): Builder
 
     /**
      * Query on Internal ID
@@ -665,16 +681,17 @@ declare namespace Neode {
      * @param  {Int|String}              traversals    Number of traversals (1, "1..2", "0..2", "..3")
      * @return {Builder}
      */
-    relationship(relationship: string | RelationshipType, direction: Neode.Direction, alias: string | null, traversals: number | string): Builder
+    relationship(relationship: string | RelationshipType, direction: Neode.Direction, alias?: string, traversals?: number | string): Builder
 
     /**
      * Complete a relationship
      * @param  {String} alias Alias
      * @param  {Model} model  Model definition
+     * @param  {Object} properties Properties to match
      * @param  {String|null} customerId
      * @return {Builder}
      */
-    to<T>(alias: string, model: Model<T>, customerId?: string): Builder
+    to<T>(alias: string, model?: Model<T>, properties?: { [key: keyof T]: any }, customerId?: string): Builder
 
     /**
      * Complete the relationship statement to point to anything
@@ -689,7 +706,7 @@ declare namespace Neode {
      * @param  {...String} output References to output
      * @return {Object}           Object containing `query` and `params` property
      */
-    build(): { query: string; params: object }
+    build(): BuiltCypher
 
     /**
      * Execute the query
@@ -754,7 +771,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    updateOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
+    updateOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<NodeCollection<T>>
 
     /**
      * Delete all nodes for this model
@@ -762,6 +779,13 @@ declare namespace Neode {
      * @return {Promise}
      */
     deleteAll(): Promise<void>
+
+    /**
+     * Delete nodes by properties
+     *
+     * @return {Promise}
+     */
+    deleteByProperties(properties: Partial<T>, customerId?: string): Promise<number>
 
     /**
      * Get a collection of nodes for this label
@@ -1111,6 +1135,14 @@ declare namespace Neode {
      * @return {Promise}
      */
     toJson(): Promise<string>
+
+    /**
+     * Update the properties for this relationship
+     *
+     * @param {Object} properties  New properties
+     * @return {Node}
+     */
+    update(properties: Partial<PROP>): Promise<Relationship<PROP, FROM, TO>>
   }
 
   class Node<T> {
@@ -1161,6 +1193,13 @@ declare namespace Neode {
      * @return {Object}
      */
     properties(): T
+
+    /**
+     * Get Labels
+     *
+     * @return {Array}
+     */
+    labels(): string[]
 
     /**
      * Update the properties of a node
@@ -1280,4 +1319,9 @@ declare namespace Neode {
 
 export interface RelationshipNode<T> {
   node: string | number | Partial<T> | T
+}
+
+export interface BuiltCypher {
+  query: string
+  params: { [key: string]: any }
 }

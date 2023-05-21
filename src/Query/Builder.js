@@ -4,6 +4,7 @@ import Order from "./Order"
 // import Return from './Return';
 import Property from "./Property"
 import Statement from "./Statement"
+import UnwindStatement from "./UnwindStatement"
 import Where, { OPERATOR_EQUALS } from "./Where"
 import WhereBetween from "./WhereBetween"
 import WhereId from "./WhereId"
@@ -101,6 +102,21 @@ export default class Builder {
   }
 
   /**
+   * Add a 'unwind' statement to the query
+   *
+   * @param  {...String} args Variables/aliases to carry through
+   * @return {Builder}
+   */
+  unwind(...args) {
+    this.whereStatement("WHERE")
+    this.statement()
+
+    this._statements.push(new UnwindStatement(...args))
+
+    return this
+  }
+
+  /**
    * Add a 'with distinct' statement to the query
    *
    * @param  {...String} args Variables/aliases to carry through
@@ -183,7 +199,7 @@ export default class Builder {
       const [left, operator, value] = args
       const right = this._addWhereParameter(left, value)
 
-      this._params[right] = value
+      // this._params[right] = value
       this._where.append(new Where(left, operator, `$${right}`))
     }
 

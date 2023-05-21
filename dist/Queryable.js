@@ -7,6 +7,7 @@ exports["default"] = void 0;
 var _Builder = _interopRequireDefault(require("./Query/Builder"));
 var _Create = _interopRequireDefault(require("./Services/Create"));
 var _DeleteAll = _interopRequireDefault(require("./Services/DeleteAll"));
+var _DeleteByProperties = _interopRequireDefault(require("./Services/DeleteByProperties"));
 var _FindAll = _interopRequireDefault(require("./Services/FindAll"));
 var _FindById = _interopRequireDefault(require("./Services/FindById"));
 var _FindWithinDistance = _interopRequireDefault(require("./Services/FindWithinDistance"));
@@ -121,6 +122,17 @@ var Queryable = /*#__PURE__*/function () {
     key: "deleteAll",
     value: function deleteAll() {
       return (0, _DeleteAll["default"])(this._neode, this);
+    }
+
+    /**
+     * Delete nodes by properties
+     *
+     * @return {Promise}
+     */
+  }, {
+    key: "deleteByProperties",
+    value: function deleteByProperties(properties, customerId) {
+      return (0, _DeleteByProperties["default"])(this._neode, this, properties, customerId);
     }
 
     /**

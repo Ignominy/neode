@@ -231,14 +231,7 @@ export function addRelationshipToStatement(neode, builder, alias, rel_alias, tar
       throw new Error(`Couldn't find a target model for ${relationship.target()} in ${relationship.name()}.  Did you use module.exports?`)
     }
 
-    if (mode === "update") {
-      console.log(node_value)
-      addReadNodeToStatement(neode, builder, target_alias, model, node_value, undefined, aliases, customerId)
-    } else {
-      node_value = GenerateDefaultValues.async(neode, model, node_value)
-
-      addNodeToStatement(neode, builder, target_alias, model, node_value, aliases, mode, model.mergeFields(), customerId)
-    }
+    addReadNodeToStatement(neode, builder, target_alias, model, node_value, undefined, aliases, customerId)
   }
 
   // Create the Relationship

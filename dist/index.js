@@ -3,6 +3,12 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+Object.defineProperty(exports, "Builder", {
+  enumerable: true,
+  get: function get() {
+    return _Builder["default"];
+  }
+});
 exports["default"] = void 0;
 var _fs = _interopRequireDefault(require("fs"));
 var _neo4jDriver = _interopRequireDefault(require("neo4j-driver"));
@@ -14,7 +20,7 @@ var _Model = _interopRequireDefault(require("./Model"));
 var _ModelMap = _interopRequireDefault(require("./ModelMap"));
 var _Builder = _interopRequireDefault(require("./Query/Builder"));
 var _Schema = _interopRequireDefault(require("./Schema"));
-var _DeleteByProperties = _interopRequireDefault(require("./Services/DeleteByProperties"));
+var _DeleteRelationshipByProperties = _interopRequireDefault(require("./Services/DeleteRelationshipByProperties"));
 var _RelateByProperties = _interopRequireDefault(require("./Services/RelateByProperties"));
 var _TransactionError = _interopRequireDefault(require("./TransactionError"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
@@ -283,7 +289,7 @@ var Neode = /*#__PURE__*/function () {
   }, {
     key: "deleteRelationshipByProperties",
     value: function deleteRelationshipByProperties(fromModel, fromProperties, type, toModel, toProperties, customerId) {
-      return (0, _DeleteByProperties["default"])(this, fromModel, fromProperties, type, toModel, toProperties, customerId);
+      return (0, _DeleteRelationshipByProperties["default"])(this, fromModel, fromProperties, type, toModel, toProperties, customerId);
     }
 
     /**
@@ -624,6 +630,15 @@ var Neode = /*#__PURE__*/function () {
       return "cid_".concat(customerId.replace(/-/g, "_"));
     }
   }, {
+    key: "getCustomerIdFromNodeLabels",
+    value: function getCustomerIdFromNodeLabels(node) {
+      var labels = node.labels();
+      var label = labels.find(function (label) {
+        return label.startsWith("cid_");
+      });
+      return label ? label.replace("cid_", "").replace(/_/g, "-") : null;
+    }
+  }, {
     key: "propertiesToCypher",
     value: function propertiesToCypher(model, properties) {
       var resObj = {};
@@ -645,4 +660,3 @@ var Neode = /*#__PURE__*/function () {
   return Neode;
 }();
 exports["default"] = Neode;
-module.exports = Neode;

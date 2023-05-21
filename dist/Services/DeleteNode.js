@@ -37,15 +37,14 @@ function addCascadeDeleteNode(neode, builder, from_alias, relationship, aliases,
       case "delete":
         addCascadeDeleteNode(neode, builder, node_alias, relationship, aliases.concat(node_alias), to_depth);
         break;
-
-      // case 'detach':
-      //     addDetachNode(neode, builder, node_alias, relationship, aliases);
-      //     break;
+      case "detach":
+        addDetachNode(neode, builder, node_alias, relationship, aliases);
+        break;
     }
   });
 
   // Delete it
-  builder.detachDelete(node_alias);
+  builder["delete"](node_alias);
 }
 
 /**
@@ -56,20 +55,17 @@ function addCascadeDeleteNode(neode, builder, from_alias, relationship, aliases,
  * @param {String}           from_alias     Alias of node at start of the match
  * @param {RelationshipType} relationship   model definition
  * @param {Array}            aliases        Current aliases
- * /
-function addDetachNode(neode, builder, from_alias, relationship, aliases) {
-    // builder.withDistinct(aliases);
-
-    const rel_alias = from_alias + relationship.name() + '_rel';
-
-    builder.optionalMatch(from_alias)
-        .relationship(relationship.relationship(), relationship.direction(), rel_alias)
-        .toAnything()
-        .delete(rel_alias);
-
-    // builder.withDistinct( aliases );
-}
  */
+function addDetachNode(neode, builder, from_alias, relationship, aliases) {
+  // builder.withDistinct(aliases);
+
+  var rel_alias = from_alias + relationship.name() + "_rel";
+  var node_alias = "".concat(from_alias + relationship.name(), "_node");
+  var target = neode.model(relationship.target());
+  builder.optionalMatch(from_alias).relationship(relationship.relationship(), relationship.direction(), rel_alias).to(node_alias, relationship.target())["delete"](rel_alias);
+
+  // builder.withDistinct( aliases );
+}
 
 /**
  * Cascade Delete a Node
@@ -79,9 +75,8 @@ function addDetachNode(neode, builder, from_alias, relationship, aliases) {
  * @param {Model}   model       Model definition
  * @param {Integer} to_depth    Maximum deletion depth
  */
-function DeleteNode(neode, identity, model) {
-  var to_depth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : MAX_EAGER_DEPTH;
-  var customerId = arguments.length > 4 ? arguments[4] : undefined;
+function DeleteNode(neode, identity, model, customerId) {
+  var to_depth = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : MAX_EAGER_DEPTH;
   var alias = "this";
   // const to_delete = [];
   var aliases = [alias];
@@ -95,14 +90,13 @@ function DeleteNode(neode, identity, model) {
       case "delete":
         addCascadeDeleteNode(neode, builder, alias, relationship, aliases, to_depth);
         break;
-
-      // case 'detach':
-      //     addDetachNode(neode, builder, alias, relationship, aliases);
-      //     break;
+      case "detach":
+        addDetachNode(neode, builder, alias, relationship, aliases);
+        break;
     }
   });
 
   // Detach Delete target node
-  builder.detachDelete(alias);
+  builder["delete"](alias);
   return builder.execute(_Builder.mode.WRITE);
 }

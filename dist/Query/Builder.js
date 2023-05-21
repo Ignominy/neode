@@ -9,6 +9,7 @@ var _Match = _interopRequireDefault(require("./Match"));
 var _Order = _interopRequireDefault(require("./Order"));
 var _Property = _interopRequireDefault(require("./Property"));
 var _Statement = _interopRequireDefault(require("./Statement"));
+var _UnwindStatement = _interopRequireDefault(require("./UnwindStatement"));
 var _Where = _interopRequireWildcard(require("./Where"));
 var _WhereBetween = _interopRequireDefault(require("./WhereBetween"));
 var _WhereId = _interopRequireDefault(require("./WhereId"));
@@ -129,6 +130,24 @@ var Builder = /*#__PURE__*/function () {
     }
 
     /**
+     * Add a 'unwind' statement to the query
+     *
+     * @param  {...String} args Variables/aliases to carry through
+     * @return {Builder}
+     */
+  }, {
+    key: "unwind",
+    value: function unwind() {
+      this.whereStatement("WHERE");
+      this.statement();
+      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+      this._statements.push(_construct(_UnwindStatement["default"], args));
+      return this;
+    }
+
+    /**
      * Add a 'with distinct' statement to the query
      *
      * @param  {...String} args Variables/aliases to carry through
@@ -139,8 +158,8 @@ var Builder = /*#__PURE__*/function () {
     value: function withDistinct() {
       this.whereStatement("WHERE");
       this.statement();
-      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-        args[_key2] = arguments[_key2];
+      for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+        args[_key3] = arguments[_key3];
       }
       this._statements.push(_construct(_WithDistinctStatement["default"], args));
       return this;
@@ -190,8 +209,8 @@ var Builder = /*#__PURE__*/function () {
     key: "where",
     value: function where() {
       var _this = this;
-      for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-        args[_key3] = arguments[_key3];
+      for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+        args[_key4] = arguments[_key4];
       }
       if (!args.length || !args[0]) return this;
 
@@ -223,7 +242,8 @@ var Builder = /*#__PURE__*/function () {
           operator = _args4[1],
           value = _args4[2];
         var right = this._addWhereParameter(left, value);
-        this._params[right] = value;
+
+        // this._params[right] = value
         this._where.append(new _Where["default"](left, operator, "$".concat(right)));
       }
       return this;
@@ -478,8 +498,8 @@ var Builder = /*#__PURE__*/function () {
   }, {
     key: "remove",
     value: function remove() {
-      for (var _len4 = arguments.length, items = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-        items[_key4] = arguments[_key4];
+      for (var _len5 = arguments.length, items = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+        items[_key5] = arguments[_key5];
       }
       this._current.remove(items);
       return this;
@@ -535,8 +555,8 @@ var Builder = /*#__PURE__*/function () {
     key: "orderBy",
     value: function orderBy() {
       var _this6 = this;
-      for (var _len5 = arguments.length, args = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
-        args[_key5] = arguments[_key5];
+      for (var _len6 = arguments.length, args = new Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+        args[_key6] = arguments[_key6];
       }
       var order_by;
       if (args.length == 2) {
