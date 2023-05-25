@@ -6,7 +6,7 @@ export const getLabelStringWithCustomerIdCheck = (model, customerId) => {
     const labels = [...model.labels()]
 
     if (labels.length === 0 || !labels.every(label => label.startsWith("__"))) {
-      if (!customerId) throw new Error("customerId is required for this model")
+      if (!customerId) throw new Error("customerId is required for this model " + model.name())
 
       labels.push(Neode.getCustomerIdLabel(customerId))
     }
@@ -14,7 +14,7 @@ export const getLabelStringWithCustomerIdCheck = (model, customerId) => {
     return `:${labels.join(":")}`
   } else if (typeof model === "string") {
     if (!model.startsWith("__")) {
-      if (!customerId) throw new Error("customerId is required for this model")
+      if (!customerId) throw new Error("customerId is required for this model " + model.name())
 
       return `:${model}:${Neode.getCustomerIdLabel(customerId)}`
     }

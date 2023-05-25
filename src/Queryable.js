@@ -59,14 +59,15 @@ export default class Queryable {
    *
    * @param  {Object} match Specific properties to merge on
    * @param  {Object} set   Properties to set
+   * @param  {String[]|null} extraEagerNames Extra eagers to load with this query
    * @param  {String|null} customerId
    * @return {Promise}
    */
-  mergeOn(match, set, customerId) {
+  mergeOn(match, set, extraEagerNames, customerId) {
     const merge_on = Object.keys(match)
     const properties = { ...match, ...set }
 
-    return MergeOn(this._neode, this, merge_on, properties, customerId)
+    return MergeOn(this._neode, this, merge_on, properties, extraEagerNames, customerId)
   }
 
   /**

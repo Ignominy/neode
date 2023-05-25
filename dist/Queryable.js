@@ -80,15 +80,16 @@ var Queryable = /*#__PURE__*/function () {
      *
      * @param  {Object} match Specific properties to merge on
      * @param  {Object} set   Properties to set
+     * @param  {String[]|null} extraEagerNames Extra eagers to load with this query
      * @param  {String|null} customerId
      * @return {Promise}
      */
   }, {
     key: "mergeOn",
-    value: function mergeOn(match, set, customerId) {
+    value: function mergeOn(match, set, extraEagerNames, customerId) {
       var merge_on = Object.keys(match);
       var properties = _objectSpread(_objectSpread({}, match), set);
-      return (0, _MergeOn["default"])(this._neode, this, merge_on, properties, customerId);
+      return (0, _MergeOn["default"])(this._neode, this, merge_on, properties, extraEagerNames, customerId);
     }
 
     /**
