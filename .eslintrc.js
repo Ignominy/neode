@@ -7,7 +7,6 @@ module.exports = {
   },
   rules: {
     ...require("@relynk/eslint-config/eslint-node").rules,
-    "import/no-cycle": "off",
     "no-underscore-dangle": "off",
     "@typescript-eslint/no-unused-expressions": "off",
     "no-param-reassign": "off",

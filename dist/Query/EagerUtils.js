@@ -29,7 +29,7 @@ var MAX_EAGER_DEPTH = 3;
  * @param {string|null} customerId        Customer ID
  */
 exports.MAX_EAGER_DEPTH = MAX_EAGER_DEPTH;
-function eagerPattern(neode, depth, alias, rel, customerId) {
+function eagerPattern(neode, depth, alias, rel, nextLevelEagers, customerId) {
   var builder = new _Builder["default"]();
   var name = rel.name();
   var type = rel.type();
@@ -49,11 +49,11 @@ function eagerPattern(neode, depth, alias, rel, customerId) {
   switch (type) {
     case "node":
     case "nodes":
-      fields = eagerNode(neode, depth + 1, node_variable, target_model, undefined, customerId);
+      fields = eagerNode(neode, depth + 1, node_variable, target_model, nextLevelEagers, customerId);
       break;
     case "relationship":
     case "relationships":
-      fields = eagerRelationship(neode, depth + 1, relationship_variable, rel.nodeAlias(), node_variable, target_model, customerId);
+      fields = eagerRelationship(neode, depth + 1, relationship_variable, rel.nodeAlias(), node_variable, target_model, nextLevelEagers, customerId);
   }
   var pattern = "".concat(name, ": [ ").concat(builder.pattern().trim(), " | ").concat(fields, " ]");
 
@@ -89,6 +89,7 @@ function eagerNode(neode, depth, alias, model, extraEagerNames, customerId) {
 
   // Create an array of all eagers and extra eagers
   var eagers = model.eager();
+  var nextNodesExtraEagerNames = {};
   if (extraEagerNames) {
     var relationships = model.relationships();
     relationships.forEach(function (relationship) {
@@ -96,6 +97,14 @@ function eagerNode(neode, depth, alias, model, extraEagerNames, customerId) {
         return x.name() === relationship.name();
       })) {
         eagers.push(relationship);
+        var nextLevelEagersFiltered = extraEagerNames.filter(function (x) {
+          return x.startsWith("".concat(relationship.name(), "."));
+        }).map(function (x) {
+          return x.replace("".concat(relationship.name(), "."), "");
+        });
+        if (nextLevelEagersFiltered.length > 0) {
+          nextNodesExtraEagerNames[relationship.name()] = nextLevelEagersFiltered;
+        }
       }
     });
   }
@@ -103,7 +112,7 @@ function eagerNode(neode, depth, alias, model, extraEagerNames, customerId) {
   // Eager
   if (model && depth <= MAX_EAGER_DEPTH) {
     eagers.forEach(function (rel) {
-      pattern += "\n".concat(indent).concat(indent, ",").concat(eagerPattern(neode, depth, alias, rel, customerId));
+      pattern += "\n".concat(indent).concat(indent, ",").concat(eagerPattern(neode, depth, alias, rel, nextNodesExtraEagerNames[rel.name()], customerId));
     });
   }
   pattern += "\n".concat(indent, "}");
@@ -120,7 +129,7 @@ function eagerNode(neode, depth, alias, model, extraEagerNames, customerId) {
  * @param {Model} model     Node model
  * @param {string|null} customerId        Customer ID
  */
-function eagerRelationship(neode, depth, alias, node_alias, node_variable, node_model, customerId) {
+function eagerRelationship(neode, depth, alias, node_alias, node_variable, node_model, nextLevelEagers, customerId) {
   var indent = "  ".repeat(depth * 2);
   var pattern = "\n".concat(indent, " ").concat(alias, " { ");
 
@@ -136,7 +145,7 @@ function eagerRelationship(neode, depth, alias, node_alias, node_variable, node_
   // Node Alias
   // pattern += `\n,${indent}${indent},${node_alias}`
   pattern += "\n".concat(indent).concat(indent, ",").concat(node_alias, ": ");
-  pattern += eagerNode(neode, depth + 1, node_variable, node_model, undefined, customerId);
+  pattern += eagerNode(neode, depth + 1, node_variable, node_model, nextLevelEagers, customerId);
   pattern += "\n".concat(indent, "}");
   return pattern;
 }

@@ -103,12 +103,22 @@ export default class Factory {
     // Create an array of all eagers and extra eagers
     const eagers = definition.eager()
 
+    const nextNodesExtraEagerNames = {}
+
     if (extraEagerNames) {
       const relationships = definition.relationships()
 
       relationships.forEach(relationship => {
         if (extraEagerNames.includes(relationship.name()) && !eagers.some(x => x.name() === relationship.name())) {
           eagers.push(relationship)
+
+          const nextLevelEagersFiltered = extraEagerNames
+            .filter(x => x.startsWith(`${relationship.name()}.`))
+            .map(x => x.replace(`${relationship.name()}.`, ""))
+
+          if (nextLevelEagersFiltered.length > 0) {
+            nextNodesExtraEagerNames[relationship.name()] = nextLevelEagersFiltered
+          }
         }
       })
     }
@@ -123,7 +133,7 @@ export default class Factory {
 
       switch (eager.type()) {
         case "node":
-          node.setEager(name, this.hydrateNode(record[name]))
+          node.setEager(name, this.hydrateNode(record[name], undefined, nextNodesExtraEagerNames[name]))
           break
 
         case "nodes":
@@ -131,13 +141,13 @@ export default class Factory {
             name,
             new Collection(
               this._neode,
-              record[name].map(value => this.hydrateNode(value)),
+              record[name].map(value => this.hydrateNode(value, undefined, nextNodesExtraEagerNames[name])),
             ),
           )
           break
 
         case "relationship":
-          node.setEager(name, this.hydrateRelationship(eager, record[name], node))
+          node.setEager(name, this.hydrateRelationship(eager, record[name], node, nextNodesExtraEagerNames[name]))
           break
 
         case "relationships":
@@ -145,7 +155,7 @@ export default class Factory {
             name,
             new Collection(
               this._neode,
-              record[name].map(value => this.hydrateRelationship(eager, value, node)),
+              record[name].map(value => this.hydrateRelationship(eager, value, node, nextNodesExtraEagerNames[name])),
             ),
           )
           break
@@ -163,7 +173,7 @@ export default class Factory {
    * @param  {Node}              this_node   'This' node in the current  context
    * @return {Relationship}
    */
-  hydrateRelationship(definition, record, this_node) {
+  hydrateRelationship(definition, record, this_node, extraEagerNames) {
     // Get Internals
     const identity = record[EAGER_ID]
     const type = record[EAGER_TYPE]
@@ -181,7 +191,7 @@ export default class Factory {
     })
 
     // Start & End Nodes
-    const other_node = this.hydrateNode(record[definition.nodeAlias()])
+    const other_node = this.hydrateNode(record[definition.nodeAlias()], undefined, extraEagerNames)
 
     // Calculate Start & End Nodes
     const start_node = definition.direction() == DIRECTION_IN ? other_node : this_node

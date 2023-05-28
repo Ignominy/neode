@@ -739,7 +739,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    create(properties: T, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T>>
+    create(properties: T, extraEagerNames?: Array<keyof T | string>, customerId?: string): Promise<Node<T>>
 
     /**
      * Merge a node based on the defined indexes
@@ -749,7 +749,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    merge(properties: T, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T>>
+    merge(properties: T, extraEagerNames?: Array<keyof T | string>, customerId?: string): Promise<Node<T>>
 
     /**
      * Merge a node based on the supplied properties
@@ -760,7 +760,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    mergeOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T>>
+    mergeOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T | string>, customerId?: string): Promise<Node<T>>
 
     /**
      * Update a node based on the supplied properties
@@ -771,7 +771,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    updateOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<NodeCollection<T>>
+    updateOn(match: Partial<T>, set: Partial<T>, extraEagerNames?: Array<keyof T | string>, customerId?: string): Promise<NodeCollection<T>>
 
     /**
      * Delete all nodes for this model
@@ -800,7 +800,7 @@ declare namespace Neode {
      */
     all(
       properties?: Partial<T>,
-      extraEagerNames?: Array<keyof T>,
+      extraEagerNames?: Array<keyof T | string>,
       order?: string | Array<any> | object,
       limit?: number,
       skip?: number,
@@ -815,7 +815,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    find(id: string | number, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
+    find(id: string | number, extraEagerNames?: Array<keyof T | string>, customerId?: string): Promise<Node<T> | undefined>
 
     /**
      * Find a Node by it's internal node ID
@@ -825,7 +825,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    findById(id: number, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
+    findById(id: number, extraEagerNames?: Array<keyof T | string>, customerId?: string): Promise<Node<T> | undefined>
 
     /**
      * Find a Node by properties
@@ -836,7 +836,7 @@ declare namespace Neode {
      * @param  {String|null} customerId
      * @return {Promise}
      */
-    first(properties: Partial<T>, extraEagerNames?: Array<keyof T>, customerId?: string): Promise<Node<T> | undefined>
+    first(properties: Partial<T>, extraEagerNames?: Array<keyof T | string>, customerId?: string): Promise<Node<T> | undefined>
 
     /**
      * Get a collection of nodes within a certain distance belonging to this label
@@ -857,7 +857,7 @@ declare namespace Neode {
       point: { x: number; y: number; z?: number } | { latitude: number; longitude: number; height?: number },
       distance: number,
       properties?: Partial<T>,
-      extraEagerNames?: Array<keyof T>,
+      extraEagerNames?: Array<keyof T | string>,
       order?: string | Array<any> | object,
       limit?: number,
       skip?: number,

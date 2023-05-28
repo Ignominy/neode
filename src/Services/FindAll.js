@@ -22,6 +22,7 @@ export default function FindAll(neode, model, properties, extraEagerNames, order
       .execute(mode.READ)
       .then(res => {
         if (!res) throw new Error(`Could not get nodes for model ${model.name()}`)
+
         return neode.hydrate(res, alias, model, extraEagerNames)
       })
       .catch(err => {

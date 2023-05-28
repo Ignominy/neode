@@ -127,6 +127,7 @@ var Factory = /*#__PURE__*/function () {
       var node = new _Node["default"](this._neode, definition, identity, labels, properties);
       // Create an array of all eagers and extra eagers
       var eagers = definition.eager();
+      var nextNodesExtraEagerNames = {};
       if (extraEagerNames) {
         var relationships = definition.relationships();
         relationships.forEach(function (relationship) {
@@ -134,6 +135,14 @@ var Factory = /*#__PURE__*/function () {
             return x.name() === relationship.name();
           })) {
             eagers.push(relationship);
+            var nextLevelEagersFiltered = extraEagerNames.filter(function (x) {
+              return x.startsWith("".concat(relationship.name(), "."));
+            }).map(function (x) {
+              return x.replace("".concat(relationship.name(), "."), "");
+            });
+            if (nextLevelEagersFiltered.length > 0) {
+              nextNodesExtraEagerNames[relationship.name()] = nextLevelEagersFiltered;
+            }
           }
         });
       }
@@ -146,19 +155,19 @@ var Factory = /*#__PURE__*/function () {
         }
         switch (eager.type()) {
           case "node":
-            node.setEager(name, _this2.hydrateNode(record[name]));
+            node.setEager(name, _this2.hydrateNode(record[name], undefined, nextNodesExtraEagerNames[name]));
             break;
           case "nodes":
             node.setEager(name, new _Collection["default"](_this2._neode, record[name].map(function (value) {
-              return _this2.hydrateNode(value);
+              return _this2.hydrateNode(value, undefined, nextNodesExtraEagerNames[name]);
             })));
             break;
           case "relationship":
-            node.setEager(name, _this2.hydrateRelationship(eager, record[name], node));
+            node.setEager(name, _this2.hydrateRelationship(eager, record[name], node, nextNodesExtraEagerNames[name]));
             break;
           case "relationships":
             node.setEager(name, new _Collection["default"](_this2._neode, record[name].map(function (value) {
-              return _this2.hydrateRelationship(eager, value, node);
+              return _this2.hydrateRelationship(eager, value, node, nextNodesExtraEagerNames[name]);
             })));
             break;
         }
@@ -176,7 +185,7 @@ var Factory = /*#__PURE__*/function () {
      */
   }, {
     key: "hydrateRelationship",
-    value: function hydrateRelationship(definition, record, this_node) {
+    value: function hydrateRelationship(definition, record, this_node, extraEagerNames) {
       // Get Internals
       var identity = record[_EagerUtils.EAGER_ID];
       var type = record[_EagerUtils.EAGER_TYPE];
@@ -193,7 +202,7 @@ var Factory = /*#__PURE__*/function () {
       });
 
       // Start & End Nodes
-      var other_node = this.hydrateNode(record[definition.nodeAlias()]);
+      var other_node = this.hydrateNode(record[definition.nodeAlias()], undefined, extraEagerNames);
 
       // Calculate Start & End Nodes
       var start_node = definition.direction() == _RelationshipType.DIRECTION_IN ? other_node : this_node;
