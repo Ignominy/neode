@@ -100,8 +100,8 @@ export default class Neode {
     return `cid_${customerId.replace(/-/g, "_")}`
   }
 
-  static getCustomerIdFromNodeLabels(node) {
-    const labels = node.labels()
+  static getCustomerIdFromNodeLabels(nodeOrLabelArr) {
+    const labels = Array.isArray(nodeOrLabelArr) ? nodeOrLabelArr : nodeOrLabelArr.labels()
     const label = labels.find(label => label.startsWith("cid_"))
     return label ? label.replace("cid_", "").replace(/_/g, "-") : null
   }

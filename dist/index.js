@@ -631,8 +631,8 @@ var Neode = /*#__PURE__*/function () {
     }
   }, {
     key: "getCustomerIdFromNodeLabels",
-    value: function getCustomerIdFromNodeLabels(node) {
-      var labels = node.labels();
+    value: function getCustomerIdFromNodeLabels(nodeOrLabelArr) {
+      var labels = Array.isArray(nodeOrLabelArr) ? nodeOrLabelArr : nodeOrLabelArr.labels();
       var label = labels.find(function (label) {
         return label.startsWith("cid_");
       });

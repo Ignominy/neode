@@ -36,7 +36,7 @@ declare class Neode {
    *
    * @param {Neode.Node} customerId
    */
-  static getCustomerIdFromNodeLabels(node: Neode.Node): string | undefined
+  static getCustomerIdFromNodeLabels(node: Neode.Node | string[]): string | undefined
 
   /**
    * Convert a properties into a cypher properties
