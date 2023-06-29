@@ -1,3 +1,0 @@
-[33m@relynk/neode:build[0m: cache hit, replaying output [2md61a53ad760e99d9[0m
-[33m@relynk/neode:build: [0m$ babel src -d dist
-[33m@relynk/neode:build: [0mSuccessfully compiled 54 files with Babel (2037ms).
