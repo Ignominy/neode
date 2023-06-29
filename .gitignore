@@ -8,3 +8,8 @@ coverage/
 config/**/*
 test.js
 dist
+
+# turbo
+.turbo
+.turbo/**/*
+.turbo/**
