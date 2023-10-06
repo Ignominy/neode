@@ -37,8 +37,6 @@
     "@babel/node": "^7.8.4",
     "@babel/preset-env": "^7.9.6",
     "@babel/register": "^7.8.6",
-    "@relynk/eslint-config": "*",
-    "@relynk/tsconfig": "*",
     "chai": "^4.3.6",
     "mocha": "^10.0.0",
     "nyc": "^14.1.1"
