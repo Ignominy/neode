@@ -4,7 +4,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = DetachFrom;
-
 function DetachFrom(neode, from, to) {
   var params = {
     from_id: from.identity(),

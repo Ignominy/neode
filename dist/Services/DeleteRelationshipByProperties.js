@@ -4,22 +4,15 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = DeleteRelationshipByProperties;
-
 var _Builder = _interopRequireDefault(require("../Query/Builder"));
-
 var _RelationshipType = _interopRequireDefault(require("../RelationshipType"));
-
 var _ReadUtils = require("./ReadUtils");
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
 function DeleteRelationshipByProperties(neode, fromModel, fromProperties, type, toModel, toProperties, customerId) {
   var relationship = fromModel.relationships().get(type);
-
   if (!(relationship instanceof _RelationshipType["default"])) {
     throw new Error("Cannot find relationship with type ".concat(type));
   }
-
   var builder = new _Builder["default"](neode);
   (0, _ReadUtils.addReadNodeToStatement)(neode, builder, "from", fromModel, fromProperties, undefined, ["from"], customerId);
   builder["with"]("from");
