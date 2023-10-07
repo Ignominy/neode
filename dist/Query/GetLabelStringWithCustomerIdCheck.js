@@ -24,7 +24,7 @@ var getLabelStringWithCustomerIdCheck = exports.getLabelStringWithCustomerIdChec
     // }
 
     if (customerId) {
-      labels.push(customerId);
+      labels.push(_index["default"].getCustomerIdLabel(customerId));
     }
     return ":".concat(labels.join(":"));
   } else if (typeof model === "string") {

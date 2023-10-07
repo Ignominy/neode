@@ -11,9 +11,10 @@ export const getLabelStringWithCustomerIdCheck = (model, customerId) => {
     //   labels.push(Neode.getCustomerIdLabel(customerId))
     // }
 
-    if(customerId) {
-      labels.push(customerId)
-    }
+      if(customerId){
+        labels.push(Neode.getCustomerIdLabel(customerId))
+      }
+    
 
     return `:${labels.join(":")}`
   } else if (typeof model === "string") {
@@ -23,7 +24,7 @@ export const getLabelStringWithCustomerIdCheck = (model, customerId) => {
     //   return `:${model}:${Neode.getCustomerIdLabel(customerId)}`
     // }
 
-    if(customerId){
+    if(customerId) {
       return `:${model}:${Neode.getCustomerIdLabel(customerId)}`
     }
 
