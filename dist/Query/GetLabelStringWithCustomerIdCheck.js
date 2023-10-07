@@ -16,16 +16,25 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
 var getLabelStringWithCustomerIdCheck = exports.getLabelStringWithCustomerIdCheck = function getLabelStringWithCustomerIdCheck(model, customerId) {
   if (model instanceof _Model["default"]) {
     var labels = _toConsumableArray(model.labels());
-    if (labels.length === 0 || !labels.every(function (label) {
-      return label.startsWith("__");
-    })) {
-      if (!customerId) throw new Error("customerId is required for this model " + model.name());
-      labels.push(_index["default"].getCustomerIdLabel(customerId));
+
+    // if (labels.length === 0 || !labels.every(label => label.startsWith("__"))) {
+    //   if (!customerId) throw new Error("customerId is required for this model " + model.name())
+
+    //   labels.push(Neode.getCustomerIdLabel(customerId))
+    // }
+
+    if (customerId) {
+      labels.push(customerId);
     }
     return ":".concat(labels.join(":"));
   } else if (typeof model === "string") {
-    if (!model.startsWith("__")) {
-      if (!customerId) throw new Error("customerId is required for this model " + model.name());
+    // if (!model.startsWith("__")) {
+    //   if (!customerId) throw new Error("customerId is required for this model " + model.name())
+
+    //   return `:${model}:${Neode.getCustomerIdLabel(customerId)}`
+    // }
+
+    if (customerId) {
       return ":".concat(model, ":").concat(_index["default"].getCustomerIdLabel(customerId));
     }
     return ":".concat(model);
